@@ -5,7 +5,7 @@ name = "ceno_host"
 version.workspace = true
 
 [dependencies]
-rkyv = "0.8.8"
+rkyv = { version = "0.8.9", features = ["unaligned"] }
 
 [dev-dependencies]
 rand.workspace = true
