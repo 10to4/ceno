@@ -93,6 +93,9 @@ mod tests {
         util::AlignedVec,
     };
 
+    /// The equivalent of this function wuold run in the host.
+    ///
+    /// We create three different items, and show that we can read them back in `consume`.
     pub fn make_stdin() -> AlignedVec {
         let mut stdin = CenoStdin::default();
         stdin
@@ -111,9 +114,15 @@ mod tests {
         stdin.finalise().unwrap()
     }
 
+    /// The equivalent of this function would run in the guest.
+    ///
+    /// `buf` would be the memory mapped region for private hints.
     pub fn consume(buf: AlignedVec) {
         let archived = rkyv::access::<ArchivedCenoStdin, Failure>(&buf[..]).unwrap();
+        // This iterator would live in a mutable static behind the scenes,
+        // so that we don't have to pass it around.
         let mut iter = prepare(archived);
+
         let test1 = read::<ArchivedTest>(&mut iter);
         assert_eq!(test1, &Test {
             int: 42,
