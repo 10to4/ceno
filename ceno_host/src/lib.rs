@@ -65,7 +65,7 @@ pub fn read_slice<'a>(i: &mut CenoIter<'a>) -> &'a [u8] {
     derive(Debug),
 )]
 struct Test {
-    int: u8,
+    int: u32,
     string: String,
     option: Option<Vec<i32>>,
 }
@@ -100,7 +100,7 @@ mod tests {
         let mut stdin = CenoStdin::default();
         stdin
             .write(&Test {
-                int: 42,
+                int: 0xDEAD_BEEF,
                 string: "hello world".to_string(),
                 option: Some(vec![1, 2, 3, 4]),
             })
@@ -125,12 +125,12 @@ mod tests {
 
         let test1 = read::<ArchivedTest>(&mut iter);
         assert_eq!(test1, &Test {
-            int: 42,
+            int: 0xDEAD_BEEF,
             string: "hello world".to_string(),
             option: Some(vec![1, 2, 3, 4]),
         });
-        let dead_beef = read::<u8>(&mut iter);
-        assert_eq!(dead_beef, &0xaf_u8);
+        let number = read::<u8>(&mut iter);
+        assert_eq!(number, &0xaf_u8);
         let test2 = read::<ArchivedToast>(&mut iter);
         assert_eq!(test2, &Toast {
             stuff: Some(vec!["hello scroll".to_string()]),
