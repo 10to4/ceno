@@ -18,15 +18,12 @@ pub struct CenoStdin {
 
 impl CenoStdin {
     pub fn write_slice(&mut self, item: AlignedVec) {
-        // Now the question is: are these bytes aligned enough?
         self.items.push(item.to_vec());
     }
     pub fn write(
         &mut self,
         item: &impl for<'a> Serialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
     ) -> Result<(), Error> {
-        // consider expanding to 16 bytes alignment and left padding with zeroes and using into_boxed_slice?
-        // Or perhaps write our own serialiser?
         let bytes = to_bytes::<Error>(item)?;
         self.items.push(bytes.to_vec());
         Ok(())
