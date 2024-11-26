@@ -93,7 +93,7 @@ mod tests {
         util::AlignedVec,
     };
 
-    /// The equivalent of this function wuold run in the host.
+    /// The equivalent of this function would run in the host.
     ///
     /// We create three different items, and show that we can read them back in `consume`.
     pub fn make_stdin() -> AlignedVec {
