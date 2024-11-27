@@ -87,9 +87,12 @@ impl<'b> SerialisedCenoStdinIter<'b> {
 impl<'a> Iterator for SerialisedCenoStdinIter<'a> {
     type Item = &'a [u8];
     fn next(&mut self) -> Option<Self::Item> {
-        let len =
-            u32::from_le_bytes(self.buf.0[self.next..self.next + 4].try_into().unwrap()) as usize;
-        self.next += 4;
+        let len = u32::from_le_bytes(
+            self.buf.0[self.next..][..size_of::<u32>()]
+                .try_into()
+                .unwrap(),
+        ) as usize;
+        self.next += size_of::<u32>();
         Some(&self.buf.0[..len])
     }
 }
