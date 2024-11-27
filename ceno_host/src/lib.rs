@@ -170,8 +170,6 @@ mod tests {
     pub fn consume(stdin: SerialisedCenoStdin) {
         println!("\nConsuming...");
         let mut iter: SerialisedCenoStdinIter = stdin.into_iter();
-        // TODO: see if we can move `.next().unwrap()` into the `read` function, and still have a happy borrow checker.
-        // (In the guest, this would be hidden behind a mutable static anyway.)
         let test1: &ArchivedTest = iter.read();
         assert_eq!(test1, &Test {
             int: 0xDEAD_BEEF,
