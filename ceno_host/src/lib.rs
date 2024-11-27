@@ -72,7 +72,7 @@ impl<'b> SerialisedCenoStdinIter<'b> {
     where
         T: Portable + for<'c> CheckBytes<HighValidator<'c, Error>>,
     {
-        rkyv::access::<T, Error>(self.next().unwrap()).unwrap()
+        rkyv::access::<T, Error>(self.read_slice()).unwrap()
     }
 
     pub fn read_slice<'a>(&'a mut self) -> &'b [u8] {
