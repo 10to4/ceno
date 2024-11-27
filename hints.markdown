@@ -22,18 +22,27 @@ Just like in SP1, the host has two corresponding functions to create that input:
 
 # Under the hood
 
-Like in SP1, the typed `read` is implemented inside the guest on top of `read_slice`: it's just a wrapper that deals with deserialisation for you.  It's [implemented exactly how you'd expect](https://docs.rs/sp1-lib/3.3.0/src/sp1_lib/io.rs.html#87).
+Like in SP1, the typed `read` is implemented inside the guest on top of `read_slice`: it's just a wrapper that deals with deserialisation for you.  In SP1 it's [implemented exactly how you'd expect](https://docs.rs/sp1-lib/3.3.0/src/sp1_lib/io.rs.html#87).  The same for us:
+
+```rust
+pub fn read<'a, T>(&'a mut self) -> &'b T
+where
+    T: Portable + for<'c> CheckBytes<HighValidator<'c, Error>>,
+{
+    rkyv::access::<T, Error>(self.read_slice()).unwrap()
+}
+```
 
 > Sidenote: users who don't like `rkyv` can wrap their own favourite deserialiser around `read_slice`.  Just like we used `rkyv` in `sproll`, even though SP1 uses `bincode` natively.
 
-`read_slice` is a bit more involved: we treat the whole [memory-mapped-io region](https://github.com/scroll-tech/ceno/pull/457) as a single byte array that we feed to rkyv and zero-copy-deserialise it once at the start of the guest program, to get something like `ArchivedVec<&[u8]>`.  We then keep track of the current position in that array, and return the next item from it, when `read_slice` is called.  That is to say, we turn it into a Rust iterator, that's a mutable static behind the scenes, and we can get away with this because our guest programs are single threaded.  (The same assumption we (and Risc0 and SP1) use in our allocators.)
+`read_slice` is a bit more involved:
 
-Avid readers will notice that we are deserialising our data twice.  Thanks to `rkyv`'s clever design, that doesn't cost us anything extra.
+At the start of the [memory-mapped region for hints](https://github.com/scroll-tech/ceno/pull/457) we store information that lets us find the byte slice for each of the items we want to read.  We keep a mutable index to the next item to read, and we increment it each time `read_slice` is called.  We then return the byte slice for that item.
 
-Another technical note: in general our memory-mapped-io region will be larger than the buffer `rkvy` needs for its serialised data.  In that case, we will conceptually add arbitrary padding (eg all zeroes) to the _front_ of the buffer. `rkyv` won't access that, so it will never show up in the execution record either. `rkyv` reads its 'root' from the back of the buffer and follows internal pointers to unravel the whole structure, so it will never see the padding.
+> Avid readers will notice that we essentially deserialise twice.  The original design used `rkyv` for both layers, but now we code up the outer layer by hand, mostly because rkyv would prefer to pin the end of the buffer to a fixed known location, but our VM design prefers to pin the start of the buffer.
+
+Another technical note: in general our memory-mapped-io region will be larger than the buffer `rkvy` needs for its serialised data.  In that case, we will conceptually add arbitrary padding (eg all zeroes) to the end of the buffer.
 
 > Sidenote: SP1 mixes general RAM and memory-mapped-io.  For that reason, they need some extra system calls (like `hint_len`) to tell the difference.  We don't have that problem, so we can keep things simpler.  This also has the benefit of only using functionality we already implemented for our VM.
 
 Our design assumes that the memory-mapped-io region is read-only.  That's a good idea for both performance and security anyway, but we can also tweak the design slightly to support read-write backing storage.
-
-> As an extra explanation: from the guest program's point of view, you can read an arbitrary number of hints during execution, but as far as the VM is concerned it's just one big hint. `rkyv` mediates between the two views, by converting from a single long byte slice to a collection of smaller (contained) slices.
