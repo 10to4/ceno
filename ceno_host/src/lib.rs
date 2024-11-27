@@ -20,6 +20,7 @@ impl CenoStdin {
     pub fn write_slice(&mut self, bytes: AlignedVec) {
         self.items.push(bytes);
     }
+
     pub fn write(
         &mut self,
         item: &impl for<'a> Serialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
@@ -32,6 +33,7 @@ impl CenoStdin {
     pub fn finalise(&self) -> SerialisedCenoStdin {
         // TODO: perhaps don't hardcode 16 here.
         // It's from rkyv's format, so we can probably take it from there somehow?
+        // TODO: clean this up.
         let initial_offset = (size_of::<u32>() * self.items.len()).next_multiple_of(16);
         println!("offset: {}", initial_offset);
         let offsets: Vec<u32> = self
