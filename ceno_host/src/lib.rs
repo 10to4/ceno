@@ -60,10 +60,11 @@ impl CenoStdin {
 
 pub type CenoIter<'a> = std::slice::Iter<'a, rkyv::vec::ArchivedVec<u8>>;
 
-pub fn read<'a, T>(bytes: &'a [u8]) -> &'a T
+pub fn read<'a, 'b, T>(iter: &'a mut impl Iterator<Item = &'b [u8]>) -> &'b T
 where
-    T: Portable + for<'b> CheckBytes<HighValidator<'b, Error>>,
+    T: Portable + for<'c> CheckBytes<HighValidator<'c, Error>>,
 {
+    let bytes = iter.next().unwrap();
     rkyv::access::<T, Error>(bytes).unwrap()
 }
 
@@ -145,15 +146,16 @@ mod tests {
 
         // TODO: see if we can move `.next().unwrap()` into the `read` function, and still have a happy borrow checker.
         // (In the guest, this would be hidden behind a mutable static anyway.)
-        let test1 = read::<ArchivedTest>(iter.next().unwrap());
+        // let test1 = read::<ArchivedTest>(iter.next().unwrap());
+        let test1 = read::<ArchivedTest>(&mut iter);
         assert_eq!(test1, &Test {
             int: 0xDEAD_BEEF,
             string: "hello world".to_string(),
             option: Some(vec![1, 2, 3, 4]),
         });
-        let number = read::<u8>(iter.next().unwrap());
+        let number = read::<u8>(&mut iter);
         assert_eq!(number, &0xaf_u8);
-        let test2 = read::<ArchivedToast>(iter.next().unwrap());
+        let test2 = read::<ArchivedToast>(&mut iter);
         assert_eq!(test2, &Toast {
             stuff: Some(vec!["hello scroll".to_string()]),
         });
