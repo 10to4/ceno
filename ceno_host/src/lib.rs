@@ -132,13 +132,16 @@ mod tests {
     /// `buf` would be the memory mapped region for private hints.
     pub fn consume(buf: AlignedVec) {
         println!("\nConsuming...");
-        let (prefix, lengths, suffix) = unsafe { buf.align_to::<u32>() };
-        assert!(prefix.is_empty());
-        assert!(suffix.is_empty());
-        let mut iter = lengths.iter().map(|len| {
-            println!("len: {}", len);
-            &buf[..*len as usize]
-        });
+        let mut iter = {
+            // TODO: hide this section in the SDK library, it wouldn't be exposed to the user.
+            let (prefix, lengths, suffix) = unsafe { buf.align_to::<u32>() };
+            assert!(prefix.is_empty());
+            assert!(suffix.is_empty());
+            lengths.iter().map(|len| {
+                println!("len: {}", len);
+                &buf[..*len as usize]
+            })
+        };
 
         // TODO: see if we can move `.next().unwrap()` into the `read` function, and still have a happy borrow checker.
         // (In the guest, this would be hidden behind a mutable static anyway.)
