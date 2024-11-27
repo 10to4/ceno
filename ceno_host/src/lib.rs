@@ -58,7 +58,7 @@ impl CenoStdin {
     }
 }
 
-pub type CenoIter<'a> = std::slice::Iter<'a, rkyv::vec::ArchivedVec<u8>>;
+// TODO: introduce a CenoIter type that wraps an iterator over AlignedVecs.
 
 pub fn read<'a, 'b, T>(iter: &'a mut impl Iterator<Item = &'b [u8]>) -> &'b T
 where
@@ -66,6 +66,10 @@ where
 {
     let bytes = iter.next().unwrap();
     rkyv::access::<T, Error>(bytes).unwrap()
+}
+
+pub fn read_slice<'a, 'b>(iter: &'a mut impl Iterator<Item = &'b [u8]>) -> &'b [u8] {
+    iter.next().unwrap()
 }
 
 // TODO: implement read_slice
