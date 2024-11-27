@@ -5,6 +5,7 @@ name = "ceno_host"
 version.workspace = true
 
 [dependencies]
+itertools.workspace = true
 rkyv = { version = "0.8.9", features = ["unaligned"] }
 
 [dev-dependencies]

@@ -1,6 +1,4 @@
-#![feature(trivial_bounds)]
-// TODO: create sp1 style host functionality.  Start with write and write_slice.
-
+use itertools::izip;
 use rkyv::{
     Archive, Deserialize, Portable, Serialize,
     api::high::{HighSerializer, HighValidator},
@@ -11,47 +9,65 @@ use rkyv::{
     util::AlignedVec,
 };
 
-#[derive(Archive, Deserialize, Serialize, Default)]
+#[derive(Default)]
 pub struct CenoStdin {
-    pub items: Vec<Vec<u8>>,
+    pub items: Vec<AlignedVec>,
 }
 
 impl CenoStdin {
-    pub fn write_slice(&mut self, item: AlignedVec) {
-        self.items.push(item.to_vec());
+    pub fn write_slice(&mut self, bytes: AlignedVec) {
+        self.items.push(bytes);
     }
     pub fn write(
         &mut self,
         item: &impl for<'a> Serialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
     ) -> Result<(), Error> {
         let bytes = to_bytes::<Error>(item)?;
-        self.items.push(bytes.to_vec());
+        self.write_slice(bytes);
         Ok(())
     }
 
-    pub fn finalise(&self) -> Result<AlignedVec, Error> {
-        to_bytes::<Error>(&self.items)
+    pub fn finalise(&self) -> AlignedVec {
+        // TODO: perhaps don't hardcode 16 here.
+        // It's from rkyv's format, so we can probably take it from there somehow?
+        let initial_offset = (size_of::<u32>() * self.items.len()).next_multiple_of(16);
+        println!("offset: {}", initial_offset);
+        let offsets: Vec<u32> = self
+            .items
+            .iter()
+            .scan(initial_offset, |acc, bytes| {
+                let output = (*acc + bytes.len()) as u32;
+                print!("len: {}\t", bytes.len());
+                *acc += bytes.len().next_multiple_of(16);
+                println!("acc: {}", *acc);
+                Some(output)
+            })
+            .collect();
+        let offsets_u8: Vec<u8> = offsets.iter().copied().flat_map(u32::to_le_bytes).collect();
+        let mut buf: AlignedVec = AlignedVec::new();
+        buf.extend_from_slice(&offsets_u8);
+        println!("buf.len() after offsets: {}", buf.len());
+        buf.extend_from_slice(&vec![0; buf.len().next_multiple_of(16) - buf.len()]);
+        println!("buf.len() after offset padding: {}", buf.len());
+        for (offset, item) in izip!(offsets, &self.items) {
+            buf.extend_from_slice(item);
+            buf.extend_from_slice(&vec![0; buf.len().next_multiple_of(16) - buf.len()]);
+            assert_eq!(buf.len(), offset.next_multiple_of(16) as usize);
+        }
+        buf
     }
 }
 
-type CenoIter<'a> = std::slice::Iter<'a, rkyv::vec::ArchivedVec<u8>>;
+pub type CenoIter<'a> = std::slice::Iter<'a, rkyv::vec::ArchivedVec<u8>>;
 
-pub fn prepare(ArchivedCenoStdin { items }: &ArchivedCenoStdin) -> CenoIter<'_> {
-    items.iter()
-}
-
-pub fn read<'a, T>(i: &mut CenoIter<'a>) -> &'a T
+pub fn read<'a, T>(bytes: &'a [u8]) -> &'a T
 where
     T: Portable + for<'b> CheckBytes<HighValidator<'b, Error>>,
 {
-    let bytes = i.next().unwrap();
     rkyv::access::<T, Error>(bytes).unwrap()
 }
 
-pub fn read_slice<'a>(i: &mut CenoIter<'a>) -> &'a [u8] {
-    let bytes = i.next().unwrap();
-    bytes.as_slice()
-}
+// TODO: implement read_slice
 
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
 #[rkyv(
@@ -108,27 +124,33 @@ mod tests {
                 stuff: Some(vec!["hello scroll".to_string()]),
             })
             .unwrap();
-        stdin.finalise().unwrap()
+        stdin.finalise()
     }
 
     /// The equivalent of this function would run in the guest.
     ///
     /// `buf` would be the memory mapped region for private hints.
     pub fn consume(buf: AlignedVec) {
-        let archived = rkyv::access::<ArchivedCenoStdin, Failure>(&buf[..]).unwrap();
-        // This iterator would live in a mutable static behind the scenes,
-        // so that we don't have to pass it around.
-        let mut iter = prepare(archived);
+        println!("\nConsuming...");
+        let (prefix, lengths, suffix) = unsafe { buf.align_to::<u32>() };
+        assert!(prefix.is_empty());
+        assert!(suffix.is_empty());
+        let mut iter = lengths.iter().map(|len| {
+            println!("len: {}", len);
+            &buf[..*len as usize]
+        });
 
-        let test1 = read::<ArchivedTest>(&mut iter);
+        // TODO: see if we can move `.next().unwrap()` into the `read` function, and still have a happy borrow checker.
+        // (In the guest, this would be hidden behind a mutable static anyway.)
+        let test1 = read::<ArchivedTest>(iter.next().unwrap());
         assert_eq!(test1, &Test {
             int: 0xDEAD_BEEF,
             string: "hello world".to_string(),
             option: Some(vec![1, 2, 3, 4]),
         });
-        let number = read::<u8>(&mut iter);
+        let number = read::<u8>(iter.next().unwrap());
         assert_eq!(number, &0xaf_u8);
-        let test2 = read::<ArchivedToast>(&mut iter);
+        let test2 = read::<ArchivedToast>(iter.next().unwrap());
         assert_eq!(test2, &Toast {
             stuff: Some(vec!["hello scroll".to_string()]),
         });
