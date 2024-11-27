@@ -4,7 +4,7 @@
 
 use itertools::izip;
 use rkyv::{
-    Archive, Deserialize, Portable, Serialize,
+    Portable, Serialize,
     api::high::{HighSerializer, HighValidator},
     bytecheck::CheckBytes,
     rancor::Error,
@@ -106,42 +106,42 @@ impl<'a> IntoIterator for &'a SerialisedCenoStdin {
     }
 }
 
-#[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
-#[rkyv(
-    // This will generate a PartialEq impl between our unarchived
-    // and archived types
-    compare(PartialEq),
-    // Derives can be passed through to the generated type:
-    derive(Debug),
-)]
-struct Test {
-    int: u32,
-    string: String,
-    option: Option<Vec<i32>>,
-}
-
-#[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
-#[rkyv(
-    // This will generate a PartialEq impl between our unarchived
-    // and archived types
-    compare(PartialEq),
-    // Derives can be passed through to the generated type:
-    derive(Debug),
-)]
-struct Toast {
-    stuff: Option<Vec<String>>,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::Rng;
     use rkyv::{
-        deserialize,
+        Archive, Deserialize, deserialize,
         rancor::{Error, Failure},
         to_bytes,
         util::AlignedVec,
     };
+
+    #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
+    #[rkyv(
+        // This will generate a PartialEq impl between our unarchived
+        // and archived types
+        compare(PartialEq),
+        // Derives can be passed through to the generated type:
+        derive(Debug),
+    )]
+    struct Test {
+        int: u32,
+        string: String,
+        option: Option<Vec<i32>>,
+    }
+
+    #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
+    #[rkyv(
+        // This will generate a PartialEq impl between our unarchived
+        // and archived types
+        compare(PartialEq),
+        // Derives can be passed through to the generated type:
+        derive(Debug),
+    )]
+    struct Toast {
+        stuff: Option<Vec<String>>,
+    }
 
     /// The equivalent of this function would run in the host.
     ///
