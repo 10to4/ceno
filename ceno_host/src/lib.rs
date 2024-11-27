@@ -14,6 +14,8 @@ pub struct CenoStdin {
     pub items: Vec<AlignedVec>,
 }
 
+pub struct SerialisedCenoStdin(pub AlignedVec);
+
 impl CenoStdin {
     pub fn write_slice(&mut self, bytes: AlignedVec) {
         self.items.push(bytes);
@@ -27,7 +29,7 @@ impl CenoStdin {
         Ok(())
     }
 
-    pub fn finalise(&self) -> AlignedVec {
+    pub fn finalise(&self) -> SerialisedCenoStdin {
         // TODO: perhaps don't hardcode 16 here.
         // It's from rkyv's format, so we can probably take it from there somehow?
         let initial_offset = (size_of::<u32>() * self.items.len()).next_multiple_of(16);
@@ -54,25 +56,46 @@ impl CenoStdin {
             buf.extend_from_slice(&vec![0; buf.len().next_multiple_of(16) - buf.len()]);
             assert_eq!(buf.len(), offset.next_multiple_of(16) as usize);
         }
-        buf
+        SerialisedCenoStdin(buf)
     }
 }
 
-// TODO: introduce a CenoIter type that wraps an iterator over AlignedVecs.
-
-pub fn read<'a, 'b, T>(iter: &'a mut impl Iterator<Item = &'b [u8]>) -> &'b T
-where
-    T: Portable + for<'c> CheckBytes<HighValidator<'c, Error>>,
-{
-    let bytes = iter.next().unwrap();
-    rkyv::access::<T, Error>(bytes).unwrap()
+pub struct SerialisedCenoStdinIter<'a> {
+    buf: &'a SerialisedCenoStdin,
+    next: usize,
 }
 
-pub fn read_slice<'a, 'b>(iter: &'a mut impl Iterator<Item = &'b [u8]>) -> &'b [u8] {
-    iter.next().unwrap()
+impl<'b> SerialisedCenoStdinIter<'b> {
+    pub fn read<'a, T>(&'a mut self) -> &'b T
+    where
+        T: Portable + for<'c> CheckBytes<HighValidator<'c, Error>>,
+    {
+        rkyv::access::<T, Error>(self.next().unwrap()).unwrap()
+    }
+
+    pub fn read_slice<'a>(&'a mut self) -> &'b [u8] {
+        self.next().unwrap()
+    }
 }
 
-// TODO: implement read_slice
+impl<'a> Iterator for SerialisedCenoStdinIter<'a> {
+    type Item = &'a [u8];
+    fn next(&mut self) -> Option<Self::Item> {
+        let len =
+            u32::from_le_bytes(self.buf.0[self.next..self.next + 4].try_into().unwrap()) as usize;
+        self.next += 4;
+        Some(&self.buf.0[..len])
+    }
+}
+
+impl<'a> IntoIterator for &'a SerialisedCenoStdin {
+    type Item = &'a [u8];
+    type IntoIter = SerialisedCenoStdinIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SerialisedCenoStdinIter { next: 0, buf: self }
+    }
+}
 
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
 #[rkyv(
@@ -114,7 +137,7 @@ mod tests {
     /// The equivalent of this function would run in the host.
     ///
     /// We create three different items, and show that we can read them back in `consume`.
-    pub fn make_stdin() -> AlignedVec {
+    pub fn make_stdin() -> SerialisedCenoStdin {
         let mut stdin = CenoStdin::default();
         stdin
             .write(&Test {
@@ -134,32 +157,22 @@ mod tests {
 
     /// The equivalent of this function would run in the guest.
     ///
-    /// `buf` would be the memory mapped region for private hints.
-    pub fn consume(buf: AlignedVec) {
+    /// `stdin` would be the memory mapped region for private hints.
+    pub fn consume(stdin: SerialisedCenoStdin) {
         println!("\nConsuming...");
-        let mut iter = {
-            // TODO: hide this section in the SDK library, it wouldn't be exposed to the user.
-            let (prefix, lengths, suffix) = unsafe { buf.align_to::<u32>() };
-            assert!(prefix.is_empty());
-            assert!(suffix.is_empty());
-            lengths.iter().map(|len| {
-                println!("len: {}", len);
-                &buf[..*len as usize]
-            })
-        };
-
+        let mut iter: SerialisedCenoStdinIter = stdin.into_iter();
         // TODO: see if we can move `.next().unwrap()` into the `read` function, and still have a happy borrow checker.
         // (In the guest, this would be hidden behind a mutable static anyway.)
         // let test1 = read::<ArchivedTest>(iter.next().unwrap());
-        let test1 = read::<ArchivedTest>(&mut iter);
+        let test1: &ArchivedTest = iter.read();
         assert_eq!(test1, &Test {
             int: 0xDEAD_BEEF,
             string: "hello world".to_string(),
             option: Some(vec![1, 2, 3, 4]),
         });
-        let number = read::<u8>(&mut iter);
+        let number: &u8 = iter.read();
         assert_eq!(number, &0xaf_u8);
-        let test2 = read::<ArchivedToast>(&mut iter);
+        let test2: &ArchivedToast = iter.read();
         assert_eq!(test2, &Toast {
             stuff: Some(vec!["hello scroll".to_string()]),
         });
