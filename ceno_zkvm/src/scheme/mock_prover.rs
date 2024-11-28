@@ -1178,6 +1178,8 @@ Hints:
 }
 
 #[allow(clippy::type_complexity)]
+// Transpose the data from Vec of LK Records(ROMType, Vec of (Combined Expr, Vec of Instance Values))
+// The goal of this transpose is to bring the instance dimension to the top.
 fn transpose<E: ExtensionField>(
     data: Vec<(ROMType, Vec<(Expression<E>, Vec<u64>)>)>,
 ) -> Vec<Vec<(ROMType, Vec<u64>)>> {
@@ -1203,6 +1205,7 @@ fn transpose<E: ExtensionField>(
     result
 }
 
+// Compare two lkm and append the errors if any.
 fn compare_lkm<E: ExtensionField>(
     inst_id: usize,
     lkm_from_cs: LkMultiplicity,
