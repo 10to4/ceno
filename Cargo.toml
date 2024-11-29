@@ -27,9 +27,11 @@ ark-std = "0.4"
 cfg-if = "1.0"
 criterion = { version = "0.5", features = ["html_reports"] }
 crossbeam-channel = "0.5"
+env_logger = "*"
 ff = "0.13"
 goldilocks = { git = "https://github.com/scroll-tech/ceno-Goldilocks" }
 itertools = "0.13"
+log = "0.4.14"
 num-derive = "0.4"
 num-traits = "0.2"
 paste = "1"

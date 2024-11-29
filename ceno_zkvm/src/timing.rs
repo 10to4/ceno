@@ -1,6 +1,6 @@
 use log::{Level, log};
 #[cfg(feature = "timing")]
-use web_time::{Duration, Instant};
+use std::time::{Duration, Instant};
 
 /// The hierarchy of scopes, and the time consumed by each one. Useful for profiling.
 #[cfg(feature = "timing")]

@@ -17,6 +17,7 @@ mod keygen;
 pub mod state;
 pub mod stats;
 pub mod structs;
+pub mod timing;
 mod uint;
 mod utils;
 mod virtual_polys;

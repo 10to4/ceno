@@ -11,8 +11,13 @@ use ceno_zkvm::{
     state::GlobalState,
     structs::{ProgramParams, ZKVMConstraintSystem, ZKVMFixedTraces, ZKVMWitnesses},
     tables::{MemFinalRecord, MemInitRecord, ProgramTableCircuit},
+    timing::{self, TimingTree},
 };
+
+use ceno_zkvm::timed;
+
 use clap::{Parser, ValueEnum};
+use env_logger;
 use ff_ext::ff::Field;
 use goldilocks::GoldilocksExt2;
 use itertools::{Itertools, MinMaxResult, chain, enumerate};
@@ -65,22 +70,27 @@ fn main() {
     const PROGRAM_SIZE: usize = 1 << 14;
     type ExampleProgramTableCircuit<E> = ProgramTableCircuit<E>;
 
+    // env_logger::init();
+    let _ = env_logger::builder().format_timestamp(None).try_init();
+    // set up TimingTree
+    let mut timing_tree = TimingTree::new("TOP_LEVEL", log::Level::Info);
+
     // set up logger
-    let (flame_layer, _guard) = FlameLayer::with_file("./tracing.folded").unwrap();
-    let subscriber = Registry::default()
-        .with(
-            fmt::layer()
-                .compact()
-                .with_thread_ids(false)
-                .with_thread_names(false),
-        )
-        .with(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::DEBUG.into())
-                .from_env_lossy(),
-        )
-        .with(flame_layer.with_threads_collapsed(true));
-    tracing::subscriber::set_global_default(subscriber).unwrap();
+    // let (flame_layer, _guard) = FlameLayer::with_file("./tracing.folded").unwrap();
+    // let subscriber = Registry::default()
+    //     .with(
+    //         fmt::layer()
+    //             .compact()
+    //             .with_thread_ids(false)
+    //             .with_thread_names(false),
+    //     )
+    //     .with(
+    //         EnvFilter::builder()
+    //             .with_default_directive(LevelFilter::DEBUG.into())
+    //             .from_env_lossy(),
+    //     )
+    //     .with(flame_layer.with_threads_collapsed(true));
+    // tracing::subscriber::set_global_default(subscriber).unwrap();
 
     let platform = match args.platform {
         Preset::Ceno => CENO_PLATFORM,
@@ -277,24 +287,30 @@ fn main() {
         })
         .collect_vec();
 
-    // assign table circuits
-    config
-        .assign_table_circuit(&zkvm_cs, &mut zkvm_witness)
-        .unwrap();
-    mmu_config
-        .assign_table_circuit(
-            &zkvm_cs,
-            &mut zkvm_witness,
-            &reg_final,
-            &mem_final,
-            &io_final,
-            &priv_io_final,
-        )
-        .unwrap();
-    // assign program circuit
-    zkvm_witness
-        .assign_table_circuit::<ExampleProgramTableCircuit<E>>(&zkvm_cs, &prog_config, vm.program())
-        .unwrap();
+    timed!(timing_tree, "assign tables", {
+        // assign table circuits
+        config
+            .assign_table_circuit(&zkvm_cs, &mut zkvm_witness)
+            .unwrap();
+        mmu_config
+            .assign_table_circuit(
+                &zkvm_cs,
+                &mut zkvm_witness,
+                &reg_final,
+                &mem_final,
+                &io_final,
+                &priv_io_final,
+            )
+            .unwrap();
+        // assign program circuit
+        zkvm_witness
+            .assign_table_circuit::<ExampleProgramTableCircuit<E>>(
+                &zkvm_cs,
+                &prog_config,
+                vm.program(),
+            )
+            .unwrap();
+    });
 
     if std::env::var("MOCK_PROVING").is_ok() {
         MockProver::assert_satisfied_full(zkvm_cs, zkvm_fixed_traces, &zkvm_witness, &pi);
@@ -303,9 +319,13 @@ fn main() {
     let timer = Instant::now();
 
     let transcript = Transcript::new(b"riscv");
-    let mut zkvm_proof = prover
-        .create_proof(zkvm_witness, pi, transcript)
-        .expect("create_proof failed");
+    let mut zkvm_proof = timed!(
+        timing_tree,
+        "create_proof",
+        prover
+            .create_proof(zkvm_witness, pi, transcript)
+            .expect("create_proof failed")
+    );
 
     let proving_time = timer.elapsed().as_secs_f64();
     let e2e_time = e2e_start.elapsed().as_secs_f64();
@@ -324,6 +344,8 @@ fn main() {
         cycle_num as f64 / e2e_time / 1000.0,
         rayon::current_num_threads()
     );
+
+    timing_tree.print();
 
     let transcript = Transcript::new(b"riscv");
     assert!(

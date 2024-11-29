@@ -26,7 +26,9 @@ multilinear_extensions = { version = "0", path = "../multilinear_extensions" }
 sumcheck = { version = "0", path = "../sumcheck" }
 transcript = { path = "../transcript" }
 
+env_logger.workspace = true
 itertools.workspace = true
+log.workspace = true
 num-traits.workspace = true
 paste.workspace = true
 prettytable-rs.workspace = true
@@ -52,12 +54,13 @@ pprof.workspace = true
 glob = "0.3"
 
 [features]
-default = ["riv32", "forbid_overflow"]
+default = ["riv32", "forbid_overflow", "timing"]
 flamegraph = ["pprof/flamegraph", "pprof/criterion"]
 forbid_overflow = []
 non_pow2_rayon_thread = []
 riv32 = []
 riv64 = []
+timing = []
 
 [[bench]]
 harness = false
