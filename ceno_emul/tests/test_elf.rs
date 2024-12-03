@@ -1,5 +1,6 @@
 use anyhow::Result;
 use ceno_emul::{ByteAddr, CENO_PLATFORM, EmuContext, InsnKind, Platform, StepRecord, VMState};
+use std::iter::zip;
 
 #[test]
 fn test_ceno_rt_mini() -> Result<()> {
@@ -54,6 +55,29 @@ fn test_ceno_rt_alloc() -> Result<()> {
     }
     assert!(found.0);
     assert!(found.1);
+    Ok(())
+}
+
+#[test]
+fn test_ceno_rt_hints() -> Result<()> {
+    // TODO: figure out how to specify hints file
+    let program_elf = ceno_examples::ceno_rt_hints;
+    let hints: Vec<u32> = vec![0xdead_beef];
+
+    let mut state = VMState::new_from_elf(CENO_PLATFORM, program_elf)?;
+
+    use ceno_emul::{CENO_PLATFORM, IterAddresses};
+    for (addr, value) in zip(CENO_PLATFORM.hints.iter_addresses(), &hints) {
+        state.init_memory(addr.into(), *value);
+    }
+    let _steps = run(&mut state)?;
+
+    // let all_messages = read_all_messages(&state);
+    // for msg in &all_messages {
+    //     print!("{}", String::from_utf8_lossy(msg));
+    // }
+    // assert_eq!(&all_messages[0], "📜📜📜 Hello, World!\n".as_bytes());
+    // assert_eq!(&all_messages[1], "🌏🌍🌎\n".as_bytes());
     Ok(())
 }
 
