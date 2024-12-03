@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use super::rv32im::EmuContext;
 use crate::{
+    InsnKind::EANY,
     PC_STEP_SIZE, Program,
     addr::{ByteAddr, RegIdx, Word, WordAddr},
     platform::Platform,
@@ -87,6 +88,25 @@ impl VMState {
             }
         })
     }
+
+    pub fn run_with_exit_code(&mut self) -> Option<u32> {
+        self.iter_until_halt().find_map(|record| {
+            record.ok().and_then(|record| {
+                (record.insn().codes().kind == EANY
+                    && record.rs1().unwrap().value == Platform::ecall_halt())
+                .then(|| record.rs2().unwrap().value)
+            })
+        })
+    }
+
+    // let halt_record = all_records
+    // .iter()
+    // .rev()
+    // .find(|record| {
+    //     record.insn().codes().kind == EANY
+    //         && record.rs1().unwrap().value == Platform::ecall_halt()
+    // })
+    // .expect("halt record not found");
 
     fn step(&mut self, emu: &Emulator) -> Result<StepRecord> {
         emu.step(self)?;

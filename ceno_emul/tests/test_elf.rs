@@ -63,6 +63,7 @@ fn test_ceno_rt_hints() -> Result<()> {
     // TODO: figure out how to specify hints file
     let program_elf = ceno_examples::ceno_rt_hints;
     let hints: Vec<u32> = vec![0xdead_beef];
+    // let hints: Vec<u32> = vec![0xdead_beef];
 
     let mut state = VMState::new_from_elf(CENO_PLATFORM, program_elf)?;
 
@@ -70,7 +71,8 @@ fn test_ceno_rt_hints() -> Result<()> {
     for (addr, value) in zip(CENO_PLATFORM.hints.iter_addresses(), &hints) {
         state.init_memory(addr.into(), *value);
     }
-    let _steps = run(&mut state)?;
+    let exit = state.run_with_exit_code();
+    assert_eq!(Some(0), exit);
 
     // let all_messages = read_all_messages(&state);
     // for msg in &all_messages {
