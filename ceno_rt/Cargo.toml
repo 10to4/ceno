@@ -6,3 +6,7 @@ version.workspace = true
 
 [dependencies]
 riscv = "0.12"
+rkyv = { version = "0.8.9", default-features = false, features = ["alloc", "bytecheck"] }
+
+# [dependencies.alloc]
+# optional = true

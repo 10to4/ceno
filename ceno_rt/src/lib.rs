@@ -5,6 +5,7 @@ use core::arch::{asm, global_asm};
 
 mod allocator;
 
+pub mod hints;
 mod io;
 pub use io::info_out;
 
