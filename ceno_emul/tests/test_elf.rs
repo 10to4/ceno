@@ -63,11 +63,10 @@ fn test_ceno_rt_alloc() -> Result<()> {
 fn test_ceno_rt_hints() {
     let program_elf = ceno_examples::ceno_rt_hints;
     let hints = make_stdin().0;
-    let (prefix, hints, postfix): (_, &[u32], _) = unsafe { hints.align_to()};
+    let (prefix, hints, postfix): (_, &[u32], _) = unsafe { hints.align_to() };
     assert_eq!(prefix, &[]);
     assert_eq!(postfix, &[]);
     // let hints: Vec<u32> = vec![0xdead_beef];
-    
 
     let mut state = VMState::new_from_elf(CENO_PLATFORM, program_elf).unwrap();
 
