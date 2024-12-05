@@ -3,9 +3,10 @@ use std::{marker::PhantomData, mem::MaybeUninit};
 use ark_std::test_rng;
 use ceno_emul::{
     CENO_PLATFORM,
-    InsnKind::{ADD, EANY},
+    InsnKind::{ADD, ECALL},
     PC_WORD_SIZE, Platform, Program, StepRecord, VMState,
 };
+use ceno_emul::Instruction as Insn;
 use ff::Field;
 use ff_ext::ExtensionField;
 use goldilocks::GoldilocksExt2;
@@ -187,23 +188,33 @@ fn test_rw_lk_expression_combination() {
     test_rw_lk_expression_combination_inner::<17, 61>();
 }
 
-const PROGRAM_SIZE: usize = 4;
-#[allow(clippy::unusual_byte_groupings)]
-const ECALL_HALT: u32 = 0b_000000000000_00000_000_00000_1110011;
-#[allow(clippy::unusual_byte_groupings)]
-const PROGRAM_CODE: [u32; PROGRAM_SIZE] = {
-    let mut program: [u32; PROGRAM_SIZE] = [ECALL_HALT; PROGRAM_SIZE];
+fn program_code() -> Vec<Insn> {
+    vec![
+        Insn{kind: ADD, rd: 4, rs1: 4, rs2: 1, ..Default::default()},
+        Insn{kind: ECALL, ..Default::default()},
+        Insn{kind: ECALL, ..Default::default()},
+        Insn{kind: ECALL, ..Default::default()},
+        Insn{kind: ECALL, ..Default::default()},
+    ]
+}
 
-    declare_program!(
-        program,
-        // func7   rs2   rs1   f3  rd    opcode
-        0b_0000000_00100_00001_000_00100_0110011, // add x4, x4, x1 <=> addi x4, x4, 1
-        ECALL_HALT,                               // ecall halt
-        ECALL_HALT,                               // ecall halt
-        ECALL_HALT,                               // ecall halt
-    );
-    program
-};
+// const PROGRAM_SIZE: usize = 4;
+// #[allow(clippy::unusual_byte_groupings)]
+// const ECALL_HALT: u32 = 0b_000000000000_00000_000_00000_1110011;
+// #[allow(clippy::unusual_byte_groupings)]
+// const PROGRAM_CODE: [u32; PROGRAM_SIZE] = {
+//     let mut program: [u32; PROGRAM_SIZE] = [ECALL_HALT; PROGRAM_SIZE];
+
+//     declare_program!(
+//         program,
+//         // func7   rs2   rs1   f3  rd    opcode
+//         0b_0000000_00100_00001_000_00100_0110011, // add x4, x4, x1 <=> addi x4, x4, 1
+//         ECALL_HALT,                               // ecall halt
+//         ECALL_HALT,                               // ecall halt
+//         ECALL_HALT,                               // ecall halt
+//     );
+//     program
+// };
 
 #[ignore = "this case is already tested in riscv_example as ecall_halt has only one instance"]
 #[test]
@@ -211,21 +222,15 @@ fn test_single_add_instance_e2e() {
     type E = GoldilocksExt2;
     type Pcs = Basefold<GoldilocksExt2, BasefoldRSParams>;
 
+    let program_code = program_code();
+    let program_size = program_code.len();
+
     // set up program
     let program = Program::new(
         CENO_PLATFORM.pc_base(),
         CENO_PLATFORM.pc_base(),
-        PROGRAM_CODE.to_vec(),
-        PROGRAM_CODE
-            .iter()
-            .enumerate()
-            .map(|(insn_idx, &insn)| {
-                (
-                    (insn_idx * PC_WORD_SIZE) as u32 + CENO_PLATFORM.pc_base(),
-                    insn,
-                )
-            })
-            .collect(),
+        program_code,
+        Default::default(),
     );
 
     let pcs_param = Pcs::setup(1 << MAX_NUM_VARIABLES).expect("Basefold PCS setup");
@@ -271,10 +276,10 @@ fn test_single_add_instance_e2e() {
     let mut add_records = vec![];
     let mut halt_records = vec![];
     all_records.into_iter().for_each(|record| {
-        let kind = record.insn().codes().kind;
+        let kind = record.insn().kind;
         match kind {
             ADD => add_records.push(record),
-            EANY => {
+            ECALL => {
                 if record.rs1().unwrap().value == Platform::ecall_halt() {
                     halt_records.push(record);
                 }

@@ -444,7 +444,7 @@ impl<E: ExtensionField> Signed<E> {
 
 #[cfg(test)]
 mod test {
-    use ceno_emul::{Change, StepRecord, encode_rv32};
+    use ceno_emul::{Change, StepRecord};
     use goldilocks::GoldilocksExt2;
 
     use super::*;

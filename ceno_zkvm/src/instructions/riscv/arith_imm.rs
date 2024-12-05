@@ -84,7 +84,7 @@ impl<E: ExtensionField> Instruction<E> for AddiInstruction<E> {
 
 #[cfg(test)]
 mod test {
-    use ceno_emul::{Change, InsnKind, PC_STEP_SIZE, StepRecord, encode_rv32};
+    use ceno_emul::{Change, InsnKind, PC_STEP_SIZE, StepRecord};
     use goldilocks::GoldilocksExt2;
 
     use crate::{

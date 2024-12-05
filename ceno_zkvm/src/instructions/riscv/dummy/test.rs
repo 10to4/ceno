@@ -1,4 +1,4 @@
-use ceno_emul::{Change, InsnKind, StepRecord, encode_rv32};
+use ceno_emul::{Change, InsnKind, StepRecord};
 use goldilocks::GoldilocksExt2;
 
 use super::*;

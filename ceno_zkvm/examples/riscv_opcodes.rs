@@ -12,9 +12,7 @@ use ceno_zkvm::{
 use clap::Parser;
 
 use ceno_emul::{
-    CENO_PLATFORM, EmuContext,
-    InsnKind::{ADD, BLTU, EANY, LUI, LW},
-    PC_WORD_SIZE, Platform, Program, StepRecord, Tracer, VMState, Word, WordAddr, encode_rv32,
+    EmuContext, InsnKind::{self, ADD, ADDI, BLTU, ECALL, LW}, Instruction, Platform, Program, StepRecord, Tracer, VMState, Word, WordAddr, CENO_PLATFORM, PC_WORD_SIZE
 };
 use ceno_zkvm::{
     scheme::{PublicValues, constants::MAX_NUM_VARIABLES, verifier::ZKVMVerifier},
@@ -28,33 +26,28 @@ use mpcs::{Basefold, BasefoldRSParams, PolynomialCommitmentScheme};
 use sumcheck::macros::{entered_span, exit_span};
 use tracing_subscriber::{EnvFilter, Registry, fmt, fmt::format::FmtSpan, layer::SubscriberExt};
 use transcript::Transcript;
-const PROGRAM_SIZE: usize = 16;
+// const PROGRAM_SIZE: usize = 16;
+
 // For now, we assume registers
 //  - x0 is not touched,
 //  - x1 is initialized to 1,
 //  - x2 is initialized to -1,
 //  - x3 is initialized to loop bound.
 // we use x4 to hold the acc_sum.
-#[allow(clippy::unusual_byte_groupings)]
-const ECALL_HALT: u32 = 0b_000000000000_00000_000_00000_1110011;
-#[allow(clippy::unusual_byte_groupings)]
-const PROGRAM_CODE: [u32; PROGRAM_SIZE] = {
-    let mut program: [u32; PROGRAM_SIZE] = [ECALL_HALT; PROGRAM_SIZE];
-    declare_program!(
-        program,
-        encode_rv32(LUI, 0, 0, 10, CENO_PLATFORM.public_io.start), // lui x10, public_io
-        encode_rv32(LW, 10, 0, 1, 0),                              // lw x1, 0(x10)
-        encode_rv32(LW, 10, 0, 2, 4),                              // lw x2, 4(x10)
-        encode_rv32(LW, 10, 0, 3, 8),                              // lw x3, 8(x10)
+fn program_code() -> Vec<Instruction> {
+    vec![
+        Instruction{kind: ADDI, rd: 10, imm: CENO_PLATFORM.public_io.start as i64, ..Default::default()},
+        Instruction{kind: LW, rd: 1, rs1: 10, ..Default::default()},
+        Instruction{kind: LW, rd: 2, rs1: 10, imm: 4, ..Default::default()},
+        Instruction{kind: LW, rd: 3, rs1: 10, imm: 8, ..Default::default()},
         // Main loop.
-        encode_rv32(ADD, 1, 4, 4, 0),              // add x4, x1, x4
-        encode_rv32(ADD, 2, 3, 3, 0),              // add x3, x2, x3
-        encode_rv32(BLTU, 0, 3, 0, -8_i32 as u32), // bltu x0, x3, -8
+        Instruction{kind: ADD, rd: 4, rs1: 1, rs2: 4, ..Default::default()},
+        Instruction{kind: ADD, rd: 3, rs1: 2, rs2: 3, ..Default::default()},
+        Instruction{kind: BLTU, rs1: 0, rs2: 3, imm: -8_i32 as i64, ..Default::default()},
         // End.
-        ECALL_HALT, // ecall halt
-    );
-    program
-};
+        Instruction{kind: ECALL, ..Default::default()},
+        ]
+}
 type ExampleProgramTableCircuit<E> = ProgramTableCircuit<E>;
 
 /// Simple program to greet a person
@@ -74,21 +67,14 @@ fn main() {
     let args = Args::parse();
     type E = GoldilocksExt2;
     type Pcs = Basefold<GoldilocksExt2, BasefoldRSParams>;
+    let program_code = program_code();
+    let program_size = program_code.len();
 
     let program = Program::new(
         CENO_PLATFORM.pc_base(),
         CENO_PLATFORM.pc_base(),
-        PROGRAM_CODE.to_vec(),
-        PROGRAM_CODE
-            .iter()
-            .enumerate()
-            .map(|(insn_idx, &insn)| {
-                (
-                    (insn_idx * PC_WORD_SIZE) as u32 + CENO_PLATFORM.pc_base(),
-                    insn,
-                )
-            })
-            .collect(),
+        program_code,
+        Default::default(),
     );
     let mem_addresses = CENO_PLATFORM.ram.clone();
     let io_addresses = CENO_PLATFORM.public_io.clone();
@@ -117,7 +103,7 @@ fn main() {
     let pcs_param = Pcs::setup(1 << MAX_NUM_VARIABLES).expect("Basefold PCS setup");
     let (pp, vp) = Pcs::trim(pcs_param, 1 << MAX_NUM_VARIABLES).expect("Basefold trim");
     let program_params = ProgramParams {
-        program_size: PROGRAM_SIZE,
+        program_size,
         ..Default::default()
     };
     let mut zkvm_cs = ZKVMConstraintSystem::new_with_platform(program_params);
@@ -193,7 +179,7 @@ fn main() {
             .iter()
             .rev()
             .find(|record| {
-                record.insn().codes().kind == EANY
+                record.insn().kind == ECALL
                     && record.rs1().unwrap().value == Platform::ecall_halt()
             })
             .expect("halt record not found");

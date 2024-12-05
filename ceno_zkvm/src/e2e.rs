@@ -9,7 +9,8 @@ use crate::{
     tables::{MemFinalRecord, MemInitRecord, ProgramTableCircuit},
 };
 use ceno_emul::{
-    ByteAddr, EmuContext, InsnKind, IterAddresses, Platform, Program, StepRecord, Tracer, VMState, WordAddr, WORD_SIZE
+    ByteAddr, EmuContext, InsnKind, IterAddresses, Platform, Program, StepRecord, Tracer, VMState,
+    WORD_SIZE, WordAddr,
 };
 use ff_ext::ExtensionField;
 use itertools::{Itertools, MinMaxResult, chain, enumerate};

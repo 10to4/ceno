@@ -1,7 +1,8 @@
 use std::{collections::HashMap, fmt, mem};
 
 use crate::{
-    addr::{ByteAddr, Cycle, RegIdx, Word, WordAddr}, InsnKind, Instruction, Platform, CENO_PLATFORM, PC_STEP_SIZE
+    CENO_PLATFORM, InsnKind, Instruction, PC_STEP_SIZE, Platform,
+    addr::{ByteAddr, Cycle, RegIdx, Word, WordAddr},
 };
 
 /// An instruction and its context in an execution trace. That is concrete values of registers and memory.
@@ -19,7 +20,7 @@ use crate::{
 pub struct StepRecord {
     cycle: Cycle,
     pc: Change<ByteAddr>,
-    insn: Instruction,
+    pub insn: Instruction,
 
     rs1: Option<ReadOp>,
     rs2: Option<ReadOp>,
@@ -191,7 +192,10 @@ impl StepRecord {
         Self::new_insn(
             cycle,
             Change::new(pc, pc + PC_STEP_SIZE),
-            Instruction {kind: InsnKind::ECALL, ..Default::default()},
+            Instruction {
+                kind: InsnKind::ECALL,
+                ..Default::default()
+            },
             Some(value),
             Some(value),
             Some(Change::new(value, value)),

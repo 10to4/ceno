@@ -1,4 +1,4 @@
-use ceno_emul::{ByteAddr, Change, InsnKind, PC_STEP_SIZE, StepRecord, Word, encode_rv32};
+use ceno_emul::{ByteAddr, Change, InsnKind, PC_STEP_SIZE, StepRecord, Word};
 use goldilocks::GoldilocksExt2;
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
     scheme::mock_prover::{MOCK_PC_START, MockProver},
 };
 
-use super::{AuipcInstruction, JalInstruction, JalrInstruction, LuiInstruction};
+use super::{JalInstruction, JalrInstruction};
 
 #[test]
 fn test_opcode_jal() {

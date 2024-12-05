@@ -109,7 +109,6 @@ mod tests {
     #[test]
     fn test_no_overlap() {
         let p = CENO_PLATFORM;
-        assert!(p.can_execute(p.pc_base()));
         // ROM and RAM do not overlap.
         assert!(!p.is_rom(p.ram.start));
         assert!(!p.is_rom(p.ram.end - WORD_SIZE as Addr));

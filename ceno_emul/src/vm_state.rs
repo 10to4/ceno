@@ -5,7 +5,7 @@ use crate::{
     PC_STEP_SIZE, Program, WORD_SIZE,
     addr::{ByteAddr, RegIdx, Word, WordAddr},
     platform::Platform,
-    rv32im::{Instruction, Emulator, TrapCause},
+    rv32im::{Emulator, Instruction, TrapCause},
     tracer::{Change, StepRecord, Tracer},
 };
 use anyhow::{Result, anyhow};
@@ -78,7 +78,7 @@ impl VMState {
     }
 
     pub fn iter_until_halt(&mut self) -> impl Iterator<Item = Result<StepRecord>> + '_ {
-        let emu = Emulator{};
+        let emu = Emulator {};
         from_fn(move || {
             if self.halted() {
                 None

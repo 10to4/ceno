@@ -1,4 +1,4 @@
-use ceno_emul::{Change, StepRecord, Word, encode_rv32};
+use ceno_emul::{Change, StepRecord, Word};
 use goldilocks::GoldilocksExt2;
 
 use crate::{

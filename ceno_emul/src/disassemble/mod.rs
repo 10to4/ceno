@@ -1,112 +1,113 @@
 use itertools::izip;
 use rrs_lib::{
+    InstructionProcessor,
     instruction_formats::{BType, IType, ITypeCSR, ITypeShamt, JType, RType, SType, UType},
-    process_instruction, InstructionProcessor,
+    process_instruction,
 };
 
 use crate::rv32im::Instruction;
 
+impl Instruction {
+    pub fn make_unsigned_imm(self) -> Self {
+        Self {
+            imm: i64::from(self.imm as u32),
+            ..self
+        }
+    }
+    pub fn make_shift_imm(self) -> Self {
+        Self {
+            imm: 1 << (self.imm & 0x1F),
+            ..self
+        }
+    }
+}
+
 type InsnKind = crate::rv32im::InsnKind;
 
 /// A transpiler that converts the 32-bit encoded instructions into instructions.
-pub(crate) struct InstructionTranspiler { pc: u32, word: u32 }
+pub(crate) struct InstructionTranspiler {
+    pc: u32,
+    word: u32,
+}
 
 impl Instruction {
     /// Create a new [`Instruction`] from an R-type instruction.
     #[must_use]
     pub const fn from_r_type(kind: InsnKind, dec_insn: &RType, raw: u32) -> Self {
-        Self {kind, rd: dec_insn.rd, rs1: dec_insn.rs1, rs2: dec_insn.rs2, imm: 0, raw}
+        Self {
+            kind,
+            rd: dec_insn.rd,
+            rs1: dec_insn.rs1,
+            rs2: dec_insn.rs2,
+            imm: 0,
+            raw,
+        }
     }
 
     /// Create a new [`Instruction`] from an I-type instruction.
     #[must_use]
     pub const fn from_i_type(kind: InsnKind, dec_insn: &IType, raw: u32) -> Self {
-        Self {kind, rd: dec_insn.rd, rs1: dec_insn.rs1, imm: dec_insn.imm as i64, rs2: 0, raw}
+        Self {
+            kind,
+            rd: dec_insn.rd,
+            rs1: dec_insn.rs1,
+            imm: dec_insn.imm as i64,
+            rs2: 0,
+            raw,
+        }
     }
 
     /// Create a new [`Instruction`] from an I-type instruction with a shamt.
     #[must_use]
     pub const fn from_i_type_shamt(kind: InsnKind, dec_insn: &ITypeShamt, raw: u32) -> Self {
-        Self {kind, rd: dec_insn.rd, rs1: dec_insn.rs1, imm: dec_insn.shamt as i64, rs2: 0, raw}
+        Self {
+            kind,
+            rd: dec_insn.rd,
+            rs1: dec_insn.rs1,
+            imm: dec_insn.shamt as i64,
+            rs2: 0,
+            raw,
+        }
     }
 
     /// Create a new [`Instruction`] from an S-type instruction.
     #[must_use]
     pub const fn from_s_type(kind: InsnKind, dec_insn: &SType, raw: u32) -> Self {
-        Self {kind, rd: 0, rs1: dec_insn.rs1, rs2: dec_insn.rs2, imm: dec_insn.imm as i64, raw}
+        Self {
+            kind,
+            rd: 0,
+            rs1: dec_insn.rs1,
+            rs2: dec_insn.rs2,
+            imm: dec_insn.imm as i64,
+            raw,
+        }
     }
 
     /// Create a new [`Instruction`] from a B-type instruction.
     #[must_use]
-    pub const fn from_b_type(kind: InsnKind, dec_insn: &BType, raw:u32) -> Self {
-        Self {kind, rd: 0, rs1: dec_insn.rs1, rs2: dec_insn.rs2, imm: dec_insn.imm as i64, raw}
+    pub const fn from_b_type(kind: InsnKind, dec_insn: &BType, raw: u32) -> Self {
+        Self {
+            kind,
+            rd: 0,
+            rs1: dec_insn.rs1,
+            rs2: dec_insn.rs2,
+            imm: dec_insn.imm as i64,
+            raw,
+        }
     }
 
     /// Create a new [`Instruction`] that is not implemented.
     #[must_use]
     pub const fn unimp(raw: u32) -> Self {
-        Self {kind: InsnKind::INVALID, rd: 0, rs1: 0, rs2: 0, imm: 0, raw}
+        Self {
+            kind: InsnKind::INVALID,
+            rd: 0,
+            rs1: 0,
+            rs2: 0,
+            imm: 0,
+            raw,
+        }
     }
-
-    // /// Returns if the [`Instruction`] is an R-type instruction.
-    // #[inline]
-    // #[must_use]
-    // pub const fn is_r_type(&self) -> bool {
-    //     !self.imm_c
-    // }
-
-    // /// Returns whether the [`Instruction`] is an I-type instruction.
-    // #[inline]
-    // #[must_use]
-    // pub const fn is_i_type(&self) -> bool {
-    //     self.imm_c
-    // }
-
-    // /// Decode the [`Instruction`] in the R-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn r_type(&self) -> (Register, Register, Register) {
-    //     (
-    //         Register::from_u8(self.op_a),
-    //         Register::from_u8(self.op_b as u8),
-    //         Register::from_u8(self.op_c as u8),
-    //     )
-    // }
-
-    // /// Decode the [`Instruction`] in the I-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn i_type(&self) -> (Register, Register, u32) {
-    //     (Register::from_u8(self.op_a), Register::from_u8(self.op_b as u8), self.op_c)
-    // }
-
-    // /// Decode the [`Instruction`] in the S-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn s_type(&self) -> (Register, Register, u32) {
-    //     (Register::from_u8(self.op_a), Register::from_u8(self.op_b as u8), self.op_c)
-    // }
-
-    // /// Decode the [`Instruction`] in the B-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn b_type(&self) -> (Register, Register, u32) {
-    //     (Register::from_u8(self.op_a), Register::from_u8(self.op_b as u8), self.op_c)
-    // }
-
-    // /// Decode the [`Instruction`] in the J-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn j_type(&self) -> (Register, u32) {
-    //     (Register::from_u8(self.op_a), self.op_b)
-    // }
-
-    // /// Decode the [`Instruction`] in the U-type format.
-    // #[inline]
-    // #[must_use]
-    // pub fn u_type(&self) -> (Register, u32) {
-    //     (Register::from_u8(self.op_a), self.op_b)
-    // }
 }
 
 impl InstructionProcessor for InstructionTranspiler {
@@ -153,7 +154,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_slli(&mut self, dec_insn: ITypeShamt) -> Self::InstructionResult {
-        Instruction::from_i_type_shamt(InsnKind::SLL, &dec_insn, self.word)
+        Instruction::from_i_type_shamt(InsnKind::SLL, &dec_insn, self.word).make_shift_imm()
     }
 
     fn process_srl(&mut self, dec_insn: RType) -> Self::InstructionResult {
@@ -161,7 +162,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_srli(&mut self, dec_insn: ITypeShamt) -> Self::InstructionResult {
-        Instruction::from_i_type_shamt(InsnKind::SRL, &dec_insn, self.word)
+        Instruction::from_i_type_shamt(InsnKind::SRL, &dec_insn, self.word).make_shift_imm()
     }
 
     fn process_sra(&mut self, dec_insn: RType) -> Self::InstructionResult {
@@ -169,7 +170,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_srai(&mut self, dec_insn: ITypeShamt) -> Self::InstructionResult {
-        Instruction::from_i_type_shamt(InsnKind::SRA, &dec_insn, self.word)
+        Instruction::from_i_type_shamt(InsnKind::SRA, &dec_insn, self.word).make_shift_imm()
     }
 
     fn process_slt(&mut self, dec_insn: RType) -> Self::InstructionResult {
@@ -185,7 +186,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_sltui(&mut self, dec_insn: IType) -> Self::InstructionResult {
-        Instruction::from_i_type(InsnKind::SLTU, &dec_insn, self.word)
+        Instruction::from_i_type(InsnKind::SLTU, &dec_insn, self.word).make_unsigned_imm()
     }
 
     fn process_lb(&mut self, dec_insn: IType) -> Self::InstructionResult {
@@ -245,7 +246,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_jal(&mut self, dec_insn: JType) -> Self::InstructionResult {
-        Instruction{
+        Instruction {
             kind: InsnKind::JAL,
             rd: dec_insn.rd,
             rs1: 0,
@@ -256,7 +257,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_jalr(&mut self, dec_insn: IType) -> Self::InstructionResult {
-        Instruction{
+        Instruction {
             kind: InsnKind::JALR,
             rd: dec_insn.rd,
             rs1: dec_insn.rs1,
@@ -275,7 +276,7 @@ impl InstructionProcessor for InstructionTranspiler {
             rd: dec_insn.rd,
             rs1: 0,
             rs2: 0,
-            imm: dec_insn.imm as i64,
+            imm: i64::from(dec_insn.imm as u32),
             raw: self.word,
         }
     }
@@ -292,13 +293,13 @@ impl InstructionProcessor for InstructionTranspiler {
             rs2: 0,
             // TODO(Matthias): check whether/where we need to do the '<< 12' shift,
             // or whether it happens automatically.
-            imm: (dec_insn.imm as i64).wrapping_add(pc as i64),
+            imm: (dec_insn.imm as i64).wrapping_add(pc as i64) as u32 as i64,
             raw: self.word,
         }
     }
 
     fn process_ecall(&mut self) -> Self::InstructionResult {
-        Instruction{
+        Instruction {
             kind: InsnKind::ECALL,
             rd: 0,
             rs1: 0,
@@ -309,7 +310,7 @@ impl InstructionProcessor for InstructionTranspiler {
     }
 
     fn process_ebreak(&mut self) -> Self::InstructionResult {
-        Instruction{
+        Instruction {
             kind: InsnKind::EBREAK,
             rd: 0,
             rs1: 0,
@@ -394,10 +395,11 @@ impl InstructionProcessor for InstructionTranspiler {
 ///
 /// This function will return an error if the [`Instruction`] cannot be processed.
 #[must_use]
-pub(crate) fn transpile(base: u32, instructions_u32: &[u32]) -> Vec<Instruction> {
+pub fn transpile(base: u32, instructions_u32: &[u32]) -> Vec<Instruction> {
     let mut instructions = Vec::new();
     for (pc, &word) in izip!(enumerate(base, 4), instructions_u32) {
-        let instruction = process_instruction(&mut InstructionTranspiler{pc, word}, word).unwrap();
+        let instruction =
+            process_instruction(&mut InstructionTranspiler { pc, word }, word).unwrap();
         instructions.push(instruction);
     }
     instructions

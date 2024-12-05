@@ -16,7 +16,7 @@ use crate::{
     },
     scheme::mock_prover::{MOCK_PC_START, MockProver},
 };
-use ceno_emul::{ByteAddr, Change, InsnKind, ReadOp, StepRecord, Word, WriteOp, encode_rv32};
+use ceno_emul::{ByteAddr, Change, InsnKind, ReadOp, StepRecord, Word, WriteOp};
 use ff_ext::ExtensionField;
 use goldilocks::GoldilocksExt2;
 use std::hash::Hash;

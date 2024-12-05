@@ -134,7 +134,7 @@ impl<E: ExtensionField, I: RIVInstruction> Instruction<E> for SetLessThanInstruc
 
 #[cfg(test)]
 mod test {
-    use ceno_emul::{Change, StepRecord, Word, encode_rv32};
+    use ceno_emul::{Change, StepRecord, Word};
     use goldilocks::GoldilocksExt2;
 
     use rand::Rng;

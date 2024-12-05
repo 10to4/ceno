@@ -12,7 +12,7 @@ mod vm_state;
 pub use vm_state::VMState;
 
 mod rv32im;
-pub use rv32im::{Instruction, EmuContext, InsnCategory, InsnCodes, InsnFormat, InsnKind};
+pub use rv32im::{EmuContext, InsnCategory, InsnFormat, InsnKind, Instruction};
 
 mod elf;
 pub use elf::Program;

@@ -1,4 +1,4 @@
-use ceno_emul::{ByteAddr, Change, PC_STEP_SIZE, StepRecord, Word, encode_rv32};
+use ceno_emul::{ByteAddr, Change, PC_STEP_SIZE, StepRecord, Word};
 use goldilocks::GoldilocksExt2;
 
 use super::*;

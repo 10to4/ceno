@@ -231,7 +231,7 @@ impl<E: ExtensionField, I: RIVInstruction> Instruction<E> for ShiftLogicalInstru
 
 #[cfg(test)]
 mod tests {
-    use ceno_emul::{Change, InsnKind, StepRecord, encode_rv32};
+    use ceno_emul::{Change, InsnKind, StepRecord};
     use goldilocks::GoldilocksExt2;
 
     use crate::{

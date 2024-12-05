@@ -170,7 +170,7 @@ mod test {
 
     mod divu {
 
-        use ceno_emul::{Change, InsnKind, StepRecord, Word, encode_rv32};
+        use ceno_emul::{Change, InsnKind, StepRecord, Word};
         use goldilocks::GoldilocksExt2;
         use itertools::Itertools;
         use multilinear_extensions::mle::IntoMLEs;

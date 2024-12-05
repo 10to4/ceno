@@ -431,6 +431,8 @@ impl<'a, E: ExtensionField + Hash> MockProver<E> {
                 )
             })
             .collect::<BTreeMap<u32, u32>>();
+        let instructions =
+            ceno_emul::disassemble::transpile(CENO_PLATFORM.pc_base(), &instructions);
         let program = Program::new(
             CENO_PLATFORM.pc_base(),
             CENO_PLATFORM.pc_base(),

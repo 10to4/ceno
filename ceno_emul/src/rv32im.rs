@@ -69,8 +69,7 @@ pub trait EmuContext {
 }
 
 /// An implementation of the basic ISA (RV32IM), that is instruction decoding and functional units.
-pub struct Emulator {
-}
+pub struct Emulator {}
 
 #[derive(Debug)]
 pub enum TrapCause {
@@ -118,7 +117,9 @@ pub enum InsnFormat {
 }
 use InsnFormat::*;
 
-#[derive(Clone, Copy, Display, Debug, PartialEq, Eq, PartialOrd, Ord, EnumIter, ToPrimitive, Default)]
+#[derive(
+    Clone, Copy, Display, Debug, PartialEq, Eq, PartialOrd, Ord, EnumIter, ToPrimitive, Default,
+)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum InsnKind {
     #[default]
@@ -150,7 +151,6 @@ pub enum InsnKind {
     BGEU,
     JAL,
     JALR,
-    LUI,
     MUL,
     MULH,
     MULHSU,
@@ -183,7 +183,6 @@ impl From<InsnKind> for InsnCategory {
             ADDI | XORI | ORI | ANDI | SLLI | SRLI | SRAI | SLTI | SLTIU => Compute,
             BEQ | BNE | BLT | BGE | BLTU | BGEU => Branch,
             JAL | JALR => Compute,
-            LUI => Compute,
             LB | LH | LW | LBU | LHU => Load,
             SB | SH | SW => Store,
             ECALL | EBREAK => System,
@@ -201,7 +200,6 @@ impl From<InsnKind> for InsnFormat {
             ADDI | XORI | ORI | ANDI | SLLI | SRLI | SRAI | SLTI | SLTIU => I,
             BEQ | BNE | BLT | BGE | BLTU | BGEU => B,
             JAL | JALR => J,
-            LUI => U,
             LB | LH | LW | LBU | LHU => I,
             SB | SH | SW => S,
             ECALL | EBREAK => I,
@@ -213,76 +211,28 @@ impl From<InsnKind> for InsnFormat {
 impl Instruction {
     pub const RD_NULL: u32 = 32;
     pub fn rd_internal(&self) -> u32 {
-            match InsnFormat::from(self.kind) {
-                R | I | U | J if self.rd != 0 => self.rd as u32,
-                _ => Self::RD_NULL,
-            }
+        match InsnFormat::from(self.kind) {
+            R | I | U | J if self.rd != 0 => self.rd as u32,
+            _ => Self::RD_NULL,
         }
+    }
+    // TODO(Matthias): review return type
+    /// Get the register source 1, or zero if the instruction does not use rs1.
+    pub fn rs1_or_zero(&self) -> u32 {
+        match InsnFormat::from(self.kind) {
+            R | I | S | B => self.rs1 as u32,
+            _ => 0,
+        }
+    }
+    // TODO(Matthias): review return type
+    /// Get the register source 2, or zero if the instruction does not use rs2.
+    pub fn rs2_or_zero(&self) -> u32 {
+        match InsnFormat::from(self.kind) {
+            R | S | B => self.rs2 as u32,
+            _ => 0,
+        }
+    }
 }
-
-#[derive(Clone, Copy, Debug)]
-pub struct InsnCodes {
-    pub format: InsnFormat,
-    pub kind: InsnKind,
-    pub category: InsnCategory,
-    pub(crate) opcode: u32,
-    pub(crate) func3: u32,
-    pub(crate) func7: u32,
-}
-
-// type InstructionTable = [InsnCodes; 47];
-// type FastInstructionTable = [u8; 1 << 10];
-
-// const RV32IM_ISA: InstructionTable = [
-//     insn(R, INVALID, Invalid, 0x00, 0x0, 0x00),
-//     insn(R, ADD, Compute, 0x33, 0x0, 0x00),
-//     insn(R, SUB, Compute, 0x33, 0x0, 0x20),
-//     insn(R, XOR, Compute, 0x33, 0x4, 0x00),
-//     insn(R, OR, Compute, 0x33, 0x6, 0x00),
-//     insn(R, AND, Compute, 0x33, 0x7, 0x00),
-//     insn(R, SLL, Compute, 0x33, 0x1, 0x00),
-//     insn(R, SRL, Compute, 0x33, 0x5, 0x00),
-//     insn(R, SRA, Compute, 0x33, 0x5, 0x20),
-//     insn(R, SLT, Compute, 0x33, 0x2, 0x00),
-//     insn(R, SLTU, Compute, 0x33, 0x3, 0x00),
-//     insn(I, ADDI, Compute, 0x13, 0x0, -1),
-//     insn(I, XORI, Compute, 0x13, 0x4, -1),
-//     insn(I, ORI, Compute, 0x13, 0x6, -1),
-//     insn(I, ANDI, Compute, 0x13, 0x7, -1),
-//     insn(I, SLLI, Compute, 0x13, 0x1, 0x00),
-//     insn(I, SRLI, Compute, 0x13, 0x5, 0x00),
-//     insn(I, SRAI, Compute, 0x13, 0x5, 0x20),
-//     insn(I, SLTI, Compute, 0x13, 0x2, -1),
-//     insn(I, SLTIU, Compute, 0x13, 0x3, -1),
-//     insn(B, BEQ, Branch, 0x63, 0x0, -1),
-//     insn(B, BNE, Branch, 0x63, 0x1, -1),
-//     insn(B, BLT, Branch, 0x63, 0x4, -1),
-//     insn(B, BGE, Branch, 0x63, 0x5, -1),
-//     insn(B, BLTU, Branch, 0x63, 0x6, -1),
-//     insn(B, BGEU, Branch, 0x63, 0x7, -1),
-//     insn(J, JAL, Compute, 0x6f, -1, -1),
-//     insn(I, JALR, Compute, 0x67, 0x0, -1),
-//     insn(U, LUI, Compute, 0x37, -1, -1),
-//     insn(U, AUIPC, Compute, 0x17, -1, -1),
-//     insn(R, MUL, Compute, 0x33, 0x0, 0x01),
-//     insn(R, MULH, Compute, 0x33, 0x1, 0x01),
-//     insn(R, MULHSU, Compute, 0x33, 0x2, 0x01),
-//     insn(R, MULHU, Compute, 0x33, 0x3, 0x01),
-//     insn(R, DIV, Compute, 0x33, 0x4, 0x01),
-//     insn(R, DIVU, Compute, 0x33, 0x5, 0x01),
-//     insn(R, REM, Compute, 0x33, 0x6, 0x01),
-//     insn(R, REMU, Compute, 0x33, 0x7, 0x01),
-//     insn(I, LB, Load, 0x03, 0x0, -1),
-//     insn(I, LH, Load, 0x03, 0x1, -1),
-//     insn(I, LW, Load, 0x03, 0x2, -1),
-//     insn(I, LBU, Load, 0x03, 0x4, -1),
-//     insn(I, LHU, Load, 0x03, 0x5, -1),
-//     insn(S, SB, Store, 0x23, 0x0, -1),
-//     insn(S, SH, Store, 0x23, 0x1, -1),
-//     insn(S, SW, Store, 0x23, 0x2, -1),
-//     insn(I, ECALL, System, 0x73, 0x0, 0x00),
-//     // TODO: EBREAK
-// ];
 
 impl Emulator {
     pub fn step<C: EmuContext>(&self, ctx: &mut C) -> Result<()> {
@@ -328,20 +278,19 @@ impl Emulator {
                 new_pc = pc.wrapping_add(decoded.imm as u32);
                 (pc + WORD_SIZE).0
             }
-            LUI => decoded.imm as u32,
-
             _ => {
                 // Instructions that read rs1 but not rs2.
-                let rs1 = ctx.load_register(decoded.rs1 as usize)?;
+                let rs1 = ctx.load_register(decoded.rs1)?;
 
                 match kind {
                     ADDI => rs1.wrapping_add(imm_i),
                     XORI => rs1 ^ imm_i,
                     ORI => rs1 | imm_i,
                     ANDI => rs1 & imm_i,
-                    SLLI => rs1 << (imm_i & 0x1f),
-                    SRLI => rs1 >> (imm_i & 0x1f),
-                    SRAI => ((rs1 as i32) >> (imm_i & 0x1f)) as u32,
+                    SLLI => rs1.wrapping_mul(imm_i),
+                    SRLI => rs1.wrapping_div(imm_i),
+                    // TODO(Matthias): check this.
+                    SRAI => (rs1 as i32).wrapping_div(imm_i as i32) as u32,
                     SLTI => {
                         if (rs1 as i32) < (imm_i as i32) {
                             1
@@ -363,7 +312,7 @@ impl Emulator {
 
                     _ => {
                         // Instructions that use rs1 and rs2.
-                        let rs2 = ctx.load_register(decoded.rs2 as usize)?;
+                        let rs2 = ctx.load_register(decoded.rs2)?;
 
                         match kind {
                             ADD => rs1.wrapping_add(rs2),
@@ -479,7 +428,7 @@ impl Emulator {
         kind: InsnKind,
         decoded: &Instruction,
     ) -> Result<bool> {
-        let rs1 = ctx.load_register(decoded.rs1 as usize)?;
+        let rs1 = ctx.load_register(decoded.rs1)?;
         // LOAD instructions do not read rs2.
         let addr = ByteAddr(rs1.wrapping_add(decoded.imm as u32));
         if !ctx.check_data_load(addr) {
@@ -531,8 +480,8 @@ impl Emulator {
         kind: InsnKind,
         decoded: &Instruction,
     ) -> Result<bool> {
-        let rs1 = ctx.load_register(decoded.rs1 as usize)?;
-        let rs2 = ctx.load_register(decoded.rs2 as usize)?;
+        let rs1 = ctx.load_register(decoded.rs1)?;
+        let rs2 = ctx.load_register(decoded.rs2)?;
         let addr = ByteAddr(rs1.wrapping_add(decoded.imm as u32));
         let shift = 8 * (addr.0 & 3);
         if !ctx.check_data_store(addr) {
