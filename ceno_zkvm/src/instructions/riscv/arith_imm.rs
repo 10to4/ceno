@@ -157,7 +157,7 @@ mod test {
             rs1: 2,
             rs2: 0,
             rd: 4,
-            imm: -3,
+            imm: -3_i32 as u32 as i64,
             ..Default::default()
         };
         let (raw_witin, lkm) = AddiInstruction::<GoldilocksExt2>::assign_instances(

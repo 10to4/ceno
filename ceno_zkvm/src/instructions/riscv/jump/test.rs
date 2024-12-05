@@ -66,16 +66,16 @@ fn test_opcode_jalr() {
         .unwrap()
         .unwrap();
 
-    let imm = -15i32;
+    let imm = -15i64;
     let rs1_read: Word = 100u32;
-    let new_pc: ByteAddr = ByteAddr(rs1_read.wrapping_add_signed(imm) & (!1));
+    let new_pc: ByteAddr = ByteAddr(rs1_read.wrapping_add(imm as u32) & (!1));
     // let insn_code = encode_rv32(InsnKind::JALR, 2, 0, 4, imm as u32);
     let insn_code = ceno_emul::Instruction {
         kind: InsnKind::JALR,
         rs1: 2,
         rs2: 0,
         rd: 4,
-        imm: imm as i64,
+        imm: imm,
         ..Default::default()
     };
 

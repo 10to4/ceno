@@ -261,7 +261,7 @@ mod test {
                     rs1: 2,
                     rs2: 0,
                     rd: 4,
-                    imm: imm as i64,
+                    imm: 1 << imm as i64,
                     ..Default::default()
                 },
                 rs1_read << imm,
@@ -274,7 +274,7 @@ mod test {
                     rs1: 2,
                     rs2: 0,
                     rd: 4,
-                    imm: imm as i64,
+                    imm: 1 << imm as i64,
                     ..Default::default()
                 },
                 (rs1_read as i32 >> imm as i32) as u32,
@@ -287,7 +287,7 @@ mod test {
                     rs1: 2,
                     rs2: 0,
                     rd: 4,
-                    imm: imm as i64,
+                    imm: 1 << imm as i64,
                     ..Default::default()
                 },
                 rs1_read >> imm,
