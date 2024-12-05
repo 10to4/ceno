@@ -73,10 +73,6 @@ impl Platform {
         self.is_ram(addr)
     }
 
-    pub fn can_execute(&self, addr: Addr) -> bool {
-        self.is_rom(addr)
-    }
-
     // Environment calls.
 
     /// Register containing the ecall function code. (x5, t0)
