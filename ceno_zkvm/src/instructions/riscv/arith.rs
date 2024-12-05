@@ -156,7 +156,14 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::ADD, 2, 3, 4, 0);
+        // let insn_code = encode_rv32(InsnKind::ADD, 2, 3, 4, 0);
+        let insn_code = ceno_emul::Instruction {
+            kind: InsnKind::ADD,
+            rs1: 2,
+            rs2: 3,
+            rd: 4,
+            ..Default::default()
+        };
         let (raw_witin, lkm) =
             AddInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
                 StepRecord::new_r_instruction(
@@ -200,7 +207,14 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::ADD, 2, 3, 4, 0);
+        // let insn_code = encode_rv32(InsnKind::ADD, 2, 3, 4, 0);
+        let insn_code = ceno_emul::Instruction {
+            kind: InsnKind::ADD,
+            rs1: 2,
+            rs2: 3,
+            rd: 4,
+            ..Default::default()
+        };
         let (raw_witin, lkm) =
             AddInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
                 StepRecord::new_r_instruction(
@@ -244,7 +258,14 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::SUB, 2, 3, 4, 0);
+        // let insn_code = encode_rv32(InsnKind::SUB, 2, 3, 4, 0);
+        let insn_code = ceno_emul::Instruction {
+            kind: InsnKind::SUB,
+            rs1: 2,
+            rs2: 3,
+            rd: 4,
+            ..Default::default()
+        };
         let (raw_witin, lkm) =
             SubInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
                 StepRecord::new_r_instruction(
@@ -288,7 +309,14 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::SUB, 2, 3, 4, 0);
+        // let insn_code = encode_rv32(InsnKind::SUB, 2, 3, 4, 0);
+        let insn_code = ceno_emul::Instruction {
+            kind: InsnKind::SUB,
+            rs1: 2,
+            rs2: 3,
+            rd: 4,
+            ..Default::default()
+        };
         let (raw_witin, _) =
             SubInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
                 StepRecord::new_r_instruction(

@@ -88,7 +88,14 @@ fn impl_opcode_store<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instruct
         .unwrap()
         .unwrap();
 
-    let insn_code = encode_rv32(I::INST_KIND, 2, 3, 0, imm);
+    let insn = ceno_emul::Instruction {
+        kind: I::INST_KIND,
+        rs1: 2,
+        rs2: 3,
+        rd: 0,
+        imm: i64::from(imm),
+        ..Default::default()
+    };
     let prev_mem_value = 0x40302010;
     let rs2_word = Word::from(0x12345678_u32);
     let rs1_word = Word::from(0x4000000_u32);
@@ -103,7 +110,7 @@ fn impl_opcode_store<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instruct
         StepRecord::new_s_instruction(
             12,
             MOCK_PC_START,
-            insn_code,
+            insn,
             rs1_word,
             rs2_word,
             WriteOp {
@@ -119,7 +126,7 @@ fn impl_opcode_store<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instruct
     ])
     .unwrap();
 
-    MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn_code], None, Some(lkm));
+    MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn], None, Some(lkm));
 }
 
 fn impl_opcode_load<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instruction<E>>(imm: u32) {
@@ -136,7 +143,14 @@ fn impl_opcode_load<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instructi
         .unwrap()
         .unwrap();
 
-    let insn_code = encode_rv32(I::INST_KIND, 2, 3, 0, imm);
+    let insn = ceno_emul::Instruction {
+        kind: I::INST_KIND,
+        rs1: 2,
+        rs2: 3,
+        rd: 0,
+        imm: i64::from(imm),
+        ..Default::default()
+    };
     let mem_value = 0x40302010;
     let rs1_word = Word::from(0x4000000_u32);
     let prev_rd_word = Word::from(0x12345678_u32);
@@ -150,7 +164,7 @@ fn impl_opcode_load<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instructi
         StepRecord::new_im_instruction(
             12,
             MOCK_PC_START,
-            insn_code,
+            insn,
             rs1_word,
             rd_change,
             ReadOp {
@@ -163,7 +177,7 @@ fn impl_opcode_load<E: ExtensionField + Hash, I: RIVInstruction, Inst: Instructi
     ])
     .unwrap();
 
-    MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn_code], None, Some(lkm));
+    MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn], None, Some(lkm));
 }
 
 fn impl_opcode_sb(imm: u32) {

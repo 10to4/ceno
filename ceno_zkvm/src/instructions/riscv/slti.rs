@@ -224,7 +224,15 @@ mod test {
         let mut cs = ConstraintSystem::<GoldilocksExt2>::new(|| "riscv");
         let mut cb = CircuitBuilder::new(&mut cs);
 
-        let insn_code = encode_rv32(I::INST_KIND, 2, 0, 4, imm as u32);
+        // let insn_code = encode_rv32(I::INST_KIND, 2, 0, 4, imm as u32);
+        let insn_code = ceno_emul::Instruction {
+            kind: I::INST_KIND,
+            rs1: 2,
+            rs2: 0,
+            rd: 4,
+            imm: i64::from(imm),
+            ..Default::default()
+        };
 
         let config = cb
             .namespace(

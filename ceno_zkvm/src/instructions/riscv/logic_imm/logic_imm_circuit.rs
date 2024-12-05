@@ -191,7 +191,15 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(I::INST_KIND, 2, 0, 4, imm);
+        // let insn_code = encode_rv32(I::INST_KIND, 2, 0, 4, imm);
+        let insn_code = ceno_emul::Instruction {
+            kind: I::INST_KIND,
+            rs1: 2,
+            rs2: 0,
+            rd: 4,
+            imm: imm as i64,
+            ..Default::default()
+        };
         let (raw_witin, lkm) = LogicInstruction::<GoldilocksExt2, I>::assign_instances(
             &config,
             cb.cs.num_witin as usize,

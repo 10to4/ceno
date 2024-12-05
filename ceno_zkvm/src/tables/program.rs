@@ -11,28 +11,11 @@ use crate::{
     utils::i64_to_base,
     witness::RowMajorMatrix,
 };
-use ceno_emul::{
-    InsnKind::*,
-    Instruction, PC_STEP_SIZE, Program, WORD_SIZE,
-};
+use ceno_emul::{InsnKind::*, Instruction, PC_STEP_SIZE, Program, WORD_SIZE};
 use ff_ext::ExtensionField;
 use goldilocks::SmallField;
 use itertools::Itertools;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
-
-#[macro_export]
-macro_rules! declare_program {
-    ($program:ident, $($instr:expr),* $(,)?) => {
-
-        {
-            let mut _i = 0;
-            $(
-                $program[_i] = $instr;
-                _i += 1;
-            )*
-        }
-    };
-}
 
 /// This structure establishes the order of the fields in instruction records, common to the program table and circuit fetches.
 #[derive(Clone, Debug)]
@@ -233,36 +216,22 @@ mod tests {
     use ff::Field;
     use goldilocks::{Goldilocks as F, GoldilocksExt2 as E};
 
-    // #[test]
-    // #[allow(clippy::identity_op)]
-    // fn test_decode_imm() {
-    //     for (i, expected) in [
-    //         // Example of I-type: ADDI.
-    //         // imm    | rs1     | funct3      | rd     | opcode
-    //         (89 << 20 | 1 << 15 | 0b000 << 12 | 1 << 7 | 0x13, 89),
-    //         // Shifts get a precomputed power of 2: SLLI, SRLI, SRAI.
-    //         (31 << 20 | 1 << 15 | 0b001 << 12 | 1 << 7 | 0x13, 1 << 31),
-    //         (31 << 20 | 1 << 15 | 0b101 << 12 | 1 << 7 | 0x13, 1 << 31),
-    //         (
-    //             1 << 30 | 31 << 20 | 1 << 15 | 0b101 << 12 | 1 << 7 | 0x13,
-    //             1 << 31,
-    //         ),
-    //         // Example of R-type with funct7: SUB.
-    //         // funct7     | rs2    | rs1     | funct3      | rd     | opcode
-    //         (0x20 << 25 | 1 << 20 | 1 << 15 | 0 << 12 | 1 << 7 | 0x33, 0),
-    //     ] {
-    //         let imm = InsnRecord::imm_internal(&Instruction::new(i));
-    //         assert_eq!(imm, expected);
-    //     }
-    // }
-
     #[test]
     fn test_program_padding() {
         let mut cs = ConstraintSystem::<E>::new(|| "riscv");
         let mut cb = CircuitBuilder::new(&mut cs);
 
         let actual_len = 3;
-        let instructions = vec![encode_rv32(ADD, 1, 2, 3, 0); actual_len];
+        let instructions = vec![
+            Instruction {
+                kind: ADD,
+                rs1: 1,
+                rs2: 2,
+                rd: 3,
+                ..Default::default()
+            };
+            actual_len
+        ];
         let program = Program::new(0x2000_0000, 0x2000_0000, instructions, Default::default());
 
         let config = ProgramTableCircuit::construct_circuit(&mut cb).unwrap();

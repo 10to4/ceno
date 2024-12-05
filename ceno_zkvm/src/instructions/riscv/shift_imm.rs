@@ -255,17 +255,41 @@ mod test {
         let (prefix, insn_code, rd_written) = match I::INST_KIND {
             InsnKind::SLLI => (
                 "SLLI",
-                encode_rv32(InsnKind::SLLI, 2, 0, 4, imm),
+                // encode_rv32(InsnKind::SLLI, 2, 0, 4, imm),
+                ceno_emul::Instruction {
+                    kind: InsnKind::SLLI,
+                    rs1: 2,
+                    rs2: 0,
+                    rd: 4,
+                    imm: imm as i64,
+                    ..Default::default()
+                },
                 rs1_read << imm,
             ),
             InsnKind::SRAI => (
                 "SRAI",
-                encode_rv32(InsnKind::SRAI, 2, 0, 4, imm),
+                // encode_rv32(InsnKind::SRAI, 2, 0, 4, imm),
+                ceno_emul::Instruction {
+                    kind: InsnKind::SRAI,
+                    rs1: 2,
+                    rs2: 0,
+                    rd: 4,
+                    imm: imm as i64,
+                    ..Default::default()
+                },
                 (rs1_read as i32 >> imm as i32) as u32,
             ),
             InsnKind::SRLI => (
                 "SRLI",
-                encode_rv32(InsnKind::SRLI, 2, 0, 4, imm),
+                // encode_rv32(InsnKind::SRLI, 2, 0, 4, imm),
+                ceno_emul::Instruction {
+                    kind: InsnKind::SRLI,
+                    rs1: 2,
+                    rs2: 0,
+                    rd: 4,
+                    imm: imm as i64,
+                    ..Default::default()
+                },
                 rs1_read >> imm,
             ),
             _ => unreachable!(),

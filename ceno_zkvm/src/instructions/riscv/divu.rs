@@ -209,7 +209,15 @@ mod test {
                 dividend / divisor
             };
 
-            let insn_code = encode_rv32(InsnKind::DIVU, 2, 3, 4, 0);
+            // let insn_code = encode_rv32(InsnKind::DIVU, 2, 3, 4, 0);
+            let insn_code = ceno_emul::Instruction {
+                kind: InsnKind::DIVU,
+                rs1: 2,
+                rs2: 3,
+                rd: 4,
+                imm: 0,
+                ..Default::default()
+            };
             // values assignment
             let (raw_witin, lkm) =
                 DivUInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![

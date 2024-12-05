@@ -87,9 +87,9 @@ pub enum TrapCause {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Instruction {
     pub kind: InsnKind,
-    pub rd: RegIdx,
     pub rs1: RegIdx,
     pub rs2: RegIdx,
+    pub rd: RegIdx,
     pub imm: i64,
     /// Only to produce better logging and error messages.
     pub raw: Word,

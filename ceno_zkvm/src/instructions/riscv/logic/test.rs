@@ -28,7 +28,14 @@ fn test_opcode_and() {
         .unwrap()
         .unwrap();
 
-    let insn_code = encode_rv32(InsnKind::AND, 2, 3, 4, 0);
+    // let insn_code = encode_rv32(InsnKind::AND, 2, 3, 4, 0);
+    let insn_code = ceno_emul::Instruction {
+        kind: InsnKind::AND,
+        rs1: 2,
+        rs2: 3,
+        rd: 4,
+        ..Default::default()
+    };
     let (raw_witin, lkm) =
         AndInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
             StepRecord::new_r_instruction(
@@ -68,7 +75,15 @@ fn test_opcode_or() {
         .unwrap()
         .unwrap();
 
-    let insn_code = encode_rv32(InsnKind::OR, 2, 3, 4, 0);
+    // let insn_code = encode_rv32(InsnKind::OR, 2, 3, 4, 0);
+    let insn_code = ceno_emul::Instruction {
+        kind: InsnKind::OR,
+        rs1: 2,
+        rs2: 3,
+        rd: 4,
+        imm: 0,
+        ..Default::default()
+    };
     let (raw_witin, lkm) =
         OrInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
             StepRecord::new_r_instruction(
@@ -108,7 +123,15 @@ fn test_opcode_xor() {
         .unwrap()
         .unwrap();
 
-    let insn_code = encode_rv32(InsnKind::XOR, 2, 3, 4, 0);
+    // let insn_code = encode_rv32(InsnKind::XOR, 2, 3, 4, 0);
+    let insn_code = ceno_emul::Instruction {
+        kind: InsnKind::XOR,
+        rs1: 2,
+        rs2: 3,
+        rd: 4,
+        imm: 0,
+        ..Default::default()
+    };
     let (raw_witin, lkm) =
         XorInstruction::assign_instances(&config, cb.cs.num_witin as usize, vec![
             StepRecord::new_r_instruction(

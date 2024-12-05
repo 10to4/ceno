@@ -3,7 +3,8 @@ use anyhow::Result;
 use std::collections::{BTreeMap, HashMap};
 
 use ceno_emul::{
-    Cycle, EmuContext, InsnKind, Instruction, Platform, Program, StepRecord, Tracer, VMState, WordAddr, CENO_PLATFORM, WORD_SIZE
+    CENO_PLATFORM, Cycle, EmuContext, InsnKind, Instruction, Platform, Program, StepRecord, Tracer,
+    VMState, WordAddr,
 };
 
 #[test]
@@ -12,7 +13,7 @@ fn test_vm_trace() -> Result<()> {
         CENO_PLATFORM.pc_base(),
         CENO_PLATFORM.pc_base(),
         program_fibonacci_20(),
-Default::default(),
+        Default::default(),
     );
     let mut ctx = VMState::new(CENO_PLATFORM, program);
 
@@ -57,19 +58,55 @@ pub fn program_fibonacci_20() -> Vec<Instruction> {
     vec![
         // x1 = 10;
         // x3 = 1;
-        Instruction{kind: InsnKind::ADDI, rd: 1,  imm: 10, ..Default::default()},
-        Instruction{kind: InsnKind::ADDI, rd: 3,  imm: 1, ..Default::default()},
+        Instruction {
+            kind: InsnKind::ADDI,
+            rd: 1,
+            imm: 10,
+            ..Default::default()
+        },
+        Instruction {
+            kind: InsnKind::ADDI,
+            rd: 3,
+            imm: 1,
+            ..Default::default()
+        },
         // loop {
         //     x1 -= 1;
-        Instruction{kind: InsnKind::ADDI, rd: 1,  imm: -1, ..Default::default()},
+        Instruction {
+            kind: InsnKind::ADDI,
+            rd: 1,
+            imm: -1,
+            ..Default::default()
+        },
         //     x2 += x3;
         //     x3 += x2;
-        Instruction{kind: InsnKind::ADD,  rd: 2, rs1: 3, rs2: 2, ..Default::default()},
-        Instruction{kind: InsnKind::ADD,  rd: 3, rs1: 3, rs2: 2, ..Default::default()},
+        Instruction {
+            kind: InsnKind::ADD,
+            rd: 2,
+            rs1: 3,
+            rs2: 2,
+            ..Default::default()
+        },
+        Instruction {
+            kind: InsnKind::ADD,
+            rd: 3,
+            rs1: 3,
+            rs2: 2,
+            ..Default::default()
+        },
         //     if x1 == 0 { break }
-        Instruction{kind: InsnKind::BNE,  rs1: 1, rs2: 0, imm: -12, ..Default::default()},
+        Instruction {
+            kind: InsnKind::BNE,
+            rs1: 1,
+            rs2: 0,
+            imm: -12,
+            ..Default::default()
+        },
         // ecall HALT, SUCCESS
-        Instruction{kind: InsnKind::ECALL, ..Default::default()},
+        Instruction {
+            kind: InsnKind::ECALL,
+            ..Default::default()
+        },
     ]
 }
 

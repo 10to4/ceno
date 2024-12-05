@@ -4,9 +4,8 @@ use ark_std::test_rng;
 use ceno_emul::{
     CENO_PLATFORM,
     InsnKind::{ADD, ECALL},
-    PC_WORD_SIZE, Platform, Program, StepRecord, VMState,
+    Instruction as Insn, Platform, Program, StepRecord, VMState,
 };
-use ceno_emul::Instruction as Insn;
 use ff::Field;
 use ff_ext::ExtensionField;
 use goldilocks::GoldilocksExt2;
@@ -19,7 +18,6 @@ use transcript::Transcript;
 
 use crate::{
     circuit_builder::CircuitBuilder,
-    declare_program,
     error::ZKVMError,
     expression::{ToExpr, WitIn},
     instructions::{
@@ -190,11 +188,29 @@ fn test_rw_lk_expression_combination() {
 
 fn program_code() -> Vec<Insn> {
     vec![
-        Insn{kind: ADD, rd: 4, rs1: 4, rs2: 1, ..Default::default()},
-        Insn{kind: ECALL, ..Default::default()},
-        Insn{kind: ECALL, ..Default::default()},
-        Insn{kind: ECALL, ..Default::default()},
-        Insn{kind: ECALL, ..Default::default()},
+        Insn {
+            kind: ADD,
+            rd: 4,
+            rs1: 4,
+            rs2: 1,
+            ..Default::default()
+        },
+        Insn {
+            kind: ECALL,
+            ..Default::default()
+        },
+        Insn {
+            kind: ECALL,
+            ..Default::default()
+        },
+        Insn {
+            kind: ECALL,
+            ..Default::default()
+        },
+        Insn {
+            kind: ECALL,
+            ..Default::default()
+        },
     ]
 }
 
@@ -223,7 +239,6 @@ fn test_single_add_instance_e2e() {
     type Pcs = Basefold<GoldilocksExt2, BasefoldRSParams>;
 
     let program_code = program_code();
-    let program_size = program_code.len();
 
     // set up program
     let program = Program::new(

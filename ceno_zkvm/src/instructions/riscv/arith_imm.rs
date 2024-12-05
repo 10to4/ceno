@@ -89,7 +89,7 @@ mod test {
 
     use crate::{
         circuit_builder::{CircuitBuilder, ConstraintSystem},
-        instructions::{Instruction, riscv::test_utils::imm_i},
+        instructions::Instruction,
         scheme::mock_prover::{MOCK_PC_START, MockProver},
     };
 
@@ -110,14 +110,22 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::ADDI, 2, 0, 4, imm_i(3));
+        // let insn_code = encode_rv32(InsnKind::ADDI, 2, 0, 4, imm_i(3));
+        let insn = ceno_emul::Instruction {
+            kind: InsnKind::ADDI,
+            rs1: 2,
+            rs2: 0,
+            rd: 4,
+            imm: 3,
+            ..Default::default()
+        };
         let (raw_witin, lkm) = AddiInstruction::<GoldilocksExt2>::assign_instances(
             &config,
             cb.cs.num_witin as usize,
             vec![StepRecord::new_i_instruction(
                 3,
                 Change::new(MOCK_PC_START, MOCK_PC_START + PC_STEP_SIZE),
-                insn_code,
+                insn,
                 1000,
                 Change::new(0, 1003),
                 0,
@@ -125,7 +133,7 @@ mod test {
         )
         .unwrap();
 
-        MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn_code], None, Some(lkm));
+        MockProver::assert_satisfied_raw(&cb, raw_witin, &[insn], None, Some(lkm));
     }
 
     #[test]
@@ -143,7 +151,15 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::ADDI, 2, 0, 4, imm_i(-3));
+        // let insn_code = encode_rv32(InsnKind::ADDI, 2, 0, 4, imm_i(-3));
+        let insn_code = ceno_emul::Instruction {
+            kind: InsnKind::ADDI,
+            rs1: 2,
+            rs2: 0,
+            rd: 4,
+            imm: -3,
+            ..Default::default()
+        };
         let (raw_witin, lkm) = AddiInstruction::<GoldilocksExt2>::assign_instances(
             &config,
             cb.cs.num_witin as usize,

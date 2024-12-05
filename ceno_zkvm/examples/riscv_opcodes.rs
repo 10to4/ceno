@@ -1,7 +1,6 @@
 use std::{panic, time::Instant};
 
 use ceno_zkvm::{
-    declare_program,
     instructions::riscv::{MemPadder, MmuConfig, Rv32imConfig, constants::EXIT_PC},
     scheme::{mock_prover::MockProver, prover::ZKVMProver},
     state::GlobalState,
@@ -12,7 +11,9 @@ use ceno_zkvm::{
 use clap::Parser;
 
 use ceno_emul::{
-    EmuContext, InsnKind::{self, ADD, ADDI, BLTU, ECALL, LW}, Instruction, Platform, Program, StepRecord, Tracer, VMState, Word, WordAddr, CENO_PLATFORM, PC_WORD_SIZE
+    CENO_PLATFORM, EmuContext,
+    InsnKind::{ADD, ADDI, BLTU, ECALL, LW},
+    Instruction, Platform, Program, StepRecord, Tracer, VMState, Word, WordAddr,
 };
 use ceno_zkvm::{
     scheme::{PublicValues, constants::MAX_NUM_VARIABLES, verifier::ZKVMVerifier},
@@ -36,17 +37,60 @@ use transcript::Transcript;
 // we use x4 to hold the acc_sum.
 fn program_code() -> Vec<Instruction> {
     vec![
-        Instruction{kind: ADDI, rd: 10, imm: CENO_PLATFORM.public_io.start as i64, ..Default::default()},
-        Instruction{kind: LW, rd: 1, rs1: 10, ..Default::default()},
-        Instruction{kind: LW, rd: 2, rs1: 10, imm: 4, ..Default::default()},
-        Instruction{kind: LW, rd: 3, rs1: 10, imm: 8, ..Default::default()},
+        Instruction {
+            kind: ADDI,
+            rd: 10,
+            imm: CENO_PLATFORM.public_io.start as i64,
+            ..Default::default()
+        },
+        Instruction {
+            kind: LW,
+            rd: 1,
+            rs1: 10,
+            ..Default::default()
+        },
+        Instruction {
+            kind: LW,
+            rd: 2,
+            rs1: 10,
+            imm: 4,
+            ..Default::default()
+        },
+        Instruction {
+            kind: LW,
+            rd: 3,
+            rs1: 10,
+            imm: 8,
+            ..Default::default()
+        },
         // Main loop.
-        Instruction{kind: ADD, rd: 4, rs1: 1, rs2: 4, ..Default::default()},
-        Instruction{kind: ADD, rd: 3, rs1: 2, rs2: 3, ..Default::default()},
-        Instruction{kind: BLTU, rs1: 0, rs2: 3, imm: -8_i32 as i64, ..Default::default()},
+        Instruction {
+            kind: ADD,
+            rd: 4,
+            rs1: 1,
+            rs2: 4,
+            ..Default::default()
+        },
+        Instruction {
+            kind: ADD,
+            rd: 3,
+            rs1: 2,
+            rs2: 3,
+            ..Default::default()
+        },
+        Instruction {
+            kind: BLTU,
+            rs1: 0,
+            rs2: 3,
+            imm: -8_i32 as i64,
+            ..Default::default()
+        },
         // End.
-        Instruction{kind: ECALL, ..Default::default()},
-        ]
+        Instruction {
+            kind: ECALL,
+            ..Default::default()
+        },
+    ]
 }
 type ExampleProgramTableCircuit<E> = ProgramTableCircuit<E>;
 
@@ -179,8 +223,7 @@ fn main() {
             .iter()
             .rev()
             .find(|record| {
-                record.insn().kind == ECALL
-                    && record.rs1().unwrap().value == Platform::ecall_halt()
+                record.insn().kind == ECALL && record.rs1().unwrap().value == Platform::ecall_halt()
             })
             .expect("halt record not found");
 

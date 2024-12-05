@@ -160,7 +160,15 @@ mod test {
             .unwrap()
             .unwrap();
 
-        let insn_code = encode_rv32(InsnKind::SLT, 2, 3, 4, 0);
+        // let insn_code = encode_rv32(InsnKind::SLT, 2, 3, 4, 0);
+        let insn_code = ceno_emul::Instruction {
+            kind: I::INST_KIND,
+            rs1: 2,
+            rs2: 3,
+            rd: 4,
+            imm: 0,
+            ..Default::default()
+        };
         let (raw_witin, lkm) = SetLessThanInstruction::<_, I>::assign_instances(
             &config,
             cb.cs.num_witin as usize,
